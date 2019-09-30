@@ -1,4 +1,4 @@
 package core.models
 
-class PersonalChat {
+abstract class PersonalChat : Chat() {
 }
