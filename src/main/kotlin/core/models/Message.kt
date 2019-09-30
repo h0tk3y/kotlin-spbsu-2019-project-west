@@ -1,9 +1,7 @@
 package core.models
 
-import core.models.AppUser
+import java.util.*
 
-class Message(val author: AppUser, val text: String) {
-    fun send() {
-
-    }
+abstract class Message(val authorID: UUID, val recipientID: UUID, val text: String) {
+    val ID: UUID? = TODO()
 }
