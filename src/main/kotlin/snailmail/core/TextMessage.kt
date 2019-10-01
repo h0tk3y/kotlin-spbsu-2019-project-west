@@ -7,5 +7,9 @@ class TextMessage(
         sender: UUID,
         date: Date,
         seen: Boolean = false,
-        content: String
-) : Message(id, sender, date, seen)
+        val content: String
+) : Message(id, sender, date, seen) {
+    override fun toString(): String {
+        return "at $date: $content"
+    }
+}
