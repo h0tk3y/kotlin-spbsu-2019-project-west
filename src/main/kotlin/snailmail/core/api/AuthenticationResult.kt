@@ -16,6 +16,11 @@ class AuthWrongCredentials : AuthenticationResult() {
         get() = false
 }
 
+class AuthRegisterFailed(val message: String) : AuthenticationResult() {
+    override val successful: Boolean
+        get() = false
+}
+
 class AuthError : AuthenticationResult() {
     override val successful: Boolean
         get() = false
