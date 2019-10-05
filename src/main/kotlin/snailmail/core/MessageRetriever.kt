@@ -3,6 +3,6 @@ package snailmail.core
 import java.util.*
 
 interface MessageRetriever {
-    fun getMessages(chat: UUID): List<Message>
-    fun getMessagesSince(chat: UUID, since: Date): List<Message> = getMessages(chat)
+    fun getMessages(): List<Message>
+    fun getMessagesSince(since: Date): List<Message>
 }
