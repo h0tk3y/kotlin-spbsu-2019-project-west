@@ -7,5 +7,5 @@ import snailmail.core.User
 interface ChatAPI {
     fun getAvailableChats(): ChatRetriever
 
-    fun startPersonalChatWith(user: User): PersonalChat
+    fun getPersonalChatWith(user: User): PersonalChat
 }
