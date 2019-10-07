@@ -3,12 +3,30 @@
  */
 package snailmail
 
-import kotlin.test.Test
-import kotlin.test.assertNotNull
+import snailmail.client.ClientSession
+import snailmail.core.UserCredentials
+import snailmail.core.api.AuthSuccessful
+import snailmail.server.Server
+import kotlin.test.*
 
 class AppTest {
-    @Test fun testAppHasAGreeting() {
-        val classUnderTest = App()
-        assertNotNull(classUnderTest.greeting, "app should have a greeting")
+    @Test fun testMyGovnokod() {
+        val server = Server()
+        val alice = ClientSession(server)
+        val bob = ClientSession(server)
+
+        val aliceToken = (server.register(UserCredentials("alice", "secret1")) as AuthSuccessful).token
+        val bobToken = (server.register(UserCredentials("bob", "secret2")) as AuthSuccessful).token
+
+        val aliceUser = server.searchByUsername(aliceToken, "alice")!!
+        val bobUser = server.searchByUsername(bobToken, "bob")!!
+
+        assertEquals(server.getAvailableChats(aliceToken).getChats(), listOf())
+        assertEquals(server.getAvailableChats(bobToken).getChats(), listOf())
+
+        val aliceChat = server.getPersonalChatWith(aliceToken, bobUser.id)
+        val bobChat = server.getPersonalChatWith(bobToken, aliceUser.id)
+
+        assertEquals(aliceChat.id, bobChat.id)
     }
 }
