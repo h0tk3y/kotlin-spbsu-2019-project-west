@@ -9,14 +9,19 @@ import kotlin.collections.HashMap
 class Server : API {
     var userCredentials = HashMap<String, String>()
     var chats = mutableListOf<Chat>()
-    var usernames = HashMap<String, UUID>()
+    var userByUsername = HashMap<String, User>()
     var idByToken = HashMap<String, UUID>()
-    var messsages = HashMap<Chat, List<Message>>()
+    var messagesByChatId = HashMap<UUID, MutableList<Message>>()
+    var chatByChatId = HashMap<UUID, Chat>()
+
+    private fun tokenIsValid(token: AuthToken) : Boolean {
+        return (idByToken[token] != null)
+    }
 
     override fun authenticate(credentials: UserCredentials): AuthenticationResult {
         return if (userCredentials.contains(credentials.username) &&
                 userCredentials[credentials.username] == credentials.password)
-            AuthSuccessful("")
+            AuthSuccessful(credentials.username)
         else AuthWrongCredentials()
     }
 
@@ -24,13 +29,13 @@ class Server : API {
         return if (userCredentials.contains(credentials.username)) AuthRegisterFailed("");
         else {
             userCredentials[credentials.username] = credentials.password
-            usernames[credentials.username] = UUID.randomUUID()
-            AuthSuccessful("")
+            userByUsername[credentials.username] = User(UUID.randomUUID(), credentials.username, credentials.username)
+            AuthSuccessful(credentials.username)
         }
     }
 
     override fun getAvailableChats(token: AuthToken): ChatRetriever {
-        if (idByToken[token] == null)
+        if (tokenIsValid(token))
             throw Exception("((")
         return object : ChatRetriever {
             override fun getChats() : List<Chat> {
@@ -40,7 +45,7 @@ class Server : API {
     }
 
     override fun getPersonalChatWith(token: AuthToken, user: UUID): PersonalChat {
-        if (idByToken[token] == null)
+        if (tokenIsValid(token))
             throw Exception("((")
         val res = chats.find { when (it) {
             is PersonalChat -> it.person1 == idByToken[token] && it.person2 == user
@@ -49,23 +54,51 @@ class Server : API {
         return if (res == null) {
             val chat : PersonalChat = PersonalChat(UUID.randomUUID(), idByToken[token]!!, user)
             chats.add(chat)
+            messagesByChatId[chat.id] = mutableListOf()
+            chatByChatId[chat.id] = chat
             chat
         } else res as PersonalChat
     }
 
     override fun getChatMessages(token: AuthToken, chat: UUID): MessageRetriever {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        if (chatByChatId[chat] == null || tokenIsValid(token) || !chatByChatId[chat]!!.hasMember(idByToken[token]!!))
+            throw Exception("((")
+        return object : MessageRetriever {
+            override fun getMessages(): List<Message> {
+                return messagesByChatId[chat]!!
+            }
+
+            override fun getMessagesSince(since: Date): List<Message> {
+                return getMessages().filter { it.date.after(since) }
+            }
+        }
     }
 
     override fun sendTextMessage(token: AuthToken, text: String, chat: UUID): TextMessage {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        if (tokenIsValid(token))
+            throw Exception("((")
+        val date : Date = Calendar.getInstance().run {
+            time
+        }
+        val msg = TextMessage(id = UUID.randomUUID(), chatId = chat,
+                sender = idByToken[token]!!, content = text, date = date)
+        messagesByChatId[chat]!!.add(msg)
+        return msg
     }
 
     override fun createGroupChat(token: AuthToken, title: String, invitedMembers: List<UUID>): GroupChat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        if (tokenIsValid(token))
+            throw Exception("((")
+        val chat = GroupChat(UUID.randomUUID(), idByToken[token]!!, invitedMembers)
+        chats.add(chat)
+        chatByChatId[chat.id] = chat
+        messagesByChatId[chat.id] = mutableListOf()
+        return chat
     }
 
     override fun searchByUsername(token: AuthToken, username: String): User? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        if (tokenIsValid(token))
+            throw Exception("((")
+        return userByUsername[username]
     }
 }
