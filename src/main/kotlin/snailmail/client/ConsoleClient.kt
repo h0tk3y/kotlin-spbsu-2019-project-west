@@ -1,9 +1,6 @@
 package snailmail.client
 
-import com.sun.net.httpserver.Authenticator
 import snailmail.core.UserCredentials
-import snailmail.core.api.API
-import snailmail.core.api.AuthSuccessful
 import snailmail.server.Server
 
 class ConsoleClient(val server : Server) {
@@ -62,7 +59,7 @@ class ConsoleClient(val server : Server) {
                     try {
                         client.sendMessage(args[1], message)
                         isSuccess = true
-                    } catch (e : MessangerException) {
+                    } catch (e: MessengerException) {
                         println(e.message)
                     }
                 }
@@ -74,7 +71,7 @@ class ConsoleClient(val server : Server) {
                         println(chat)
                     }
                     isSuccess = true
-                } catch (e: MessangerException) {
+                } catch (e: MessengerException) {
                     print(e.message)
                 }
             }
@@ -88,7 +85,7 @@ class ConsoleClient(val server : Server) {
                         val user = client.findUser(args[1])
                         println(user)
                         isSuccess = true
-                    } catch (e: MessangerException) {
+                    } catch (e: MessengerException) {
                         println(e.message)
                     }
                 }
