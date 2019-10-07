@@ -1,7 +1,6 @@
 package snailmail.client
 
-import snailmail.core.User
-import snailmail.core.UserCredentials
+import snailmail.core.*
 import snailmail.core.api.API
 
 class ClientSession(val ClientAPI : API) {
@@ -13,8 +12,27 @@ class ClientSession(val ClientAPI : API) {
         return UserCredentials(username, password)
     }
 
-    private fun findUser(username : String) : User? {
-        return ClientAPI.searchByUsername(username)
+    fun findUser(username : String) : User =
+        ClientAPI.searchByUsername(username) ?: throw UserNotFoundException("This user doesn't exist")
+
+    fun sendMessage(username: String, message: String) : TextMessage {
+        val user = findUser(username)
+        return ClientAPI.sendTextMessage(message,
+                ClientAPI.getPersonalChatWith(user))
+    }
+
+    fun findAvailableChats() : List<Chat> {
+        return ClientAPI.getAvailableChats().getChats()
+    }
+
+    fun findPersonalChat(username: String) : Chat {
+        val user = findUser(username)
+        return ClientAPI.getPersonalChatWith(user)
+    }
+
+    fun getPersonalChatHistory(username: String) : List<Message> {
+        val chat = findPersonalChat(username)
+        return ClientAPI.getChatMessages(chat).getMessages()
     }
 
     fun startSession(){
@@ -55,18 +73,17 @@ class ClientSession(val ClientAPI : API) {
                 if (args.size >= 3) {
                     val message = args.filterIndexed { index, _ -> index >= 2 }
                             .joinToString(separator = " ")
-                    val user = findUser(args[1])
-                    if (user == null) {
-                        println("This user doesn't exist")
+                    try {
+                        sendMessage(args[1], message)
+                    }
+                    catch (e : UserNotFoundException) {
+                        println(e.message)
                         isSuccess = false
-                    } else {
-                        ClientAPI.sendTextMessage(message,
-                                ClientAPI.getPersonalChatWith(user))
                     }
                 } else isSuccess = false
             }
             "/viewAvailableChats" -> {
-                val availableChats = ClientAPI.getAvailableChats().getChats()
+                val availableChats = findAvailableChats()
                 for (chat in availableChats) {
                     println(chat)
                 }
@@ -76,27 +93,27 @@ class ClientSession(val ClientAPI : API) {
             }
             "/findUsername" -> {
                 if (args.size == 2) {
-                    val user = findUser(args[1])
-                    if (user == null) {
-                        println("This user doesn't exist")
-                        isSuccess = false
-                    } else {
+                    try {
+                        val user = findUser(args[1])
                         println(user)
+                    }
+                    catch (e : UserNotFoundException) {
+                        println(e.message)
+                        isSuccess = false
                     }
                 } else isSuccess = false
             }
             "/getPersonalChat" -> {
                 if (args.size == 2) {
-                    val user = findUser(args[1])
-                    if (user == null) {
-                        println("This user doesn't exist")
-                        isSuccess = false
-                    } else {
-                        val chat = ClientAPI.getPersonalChatWith(user)
-                        val history = ClientAPI.getChatMessages(chat).getMessages()
+                    try {
+                        val history = getPersonalChatHistory(args[1])
                         for (message in history) {
                             println(message)
                         }
+                    }
+                    catch (e : UserNotFoundException) {
+                        println(e.message)
+                        isSuccess = false
                     }
                 } else isSuccess = false
             }
