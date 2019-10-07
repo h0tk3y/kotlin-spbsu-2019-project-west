@@ -12,33 +12,33 @@ class Client(val server : Server) {
         token ?: throw NoAuthTokenException("Token doesn't exist")
 
     fun findUser(username : String) : User {
-        val t = acquireToken()
-        return server.searchByUsername(t, username) ?:
+        val validToken = acquireToken()
+        return server.searchByUsername(validToken, username) ?:
         throw UserNotFoundException("This user doesn't exist")
     }
 
     fun sendMessage(username: String, message: String) : TextMessage {
         val user = findUser(username)
-        val t = acquireToken()
-        return server.sendTextMessage(t, message,
-                server.getPersonalChatWith(t, user.id).id)
+        val validToken = acquireToken()
+        return server.sendTextMessage(validToken, message,
+                server.getPersonalChatWith(validToken, user.id).id)
     }
 
     fun findAvailableChats() : List<Chat> {
-        val t = acquireToken()
-        return server.getAvailableChats(t).getChats()
+        val validToken = acquireToken()
+        return server.getAvailableChats(validToken).getChats()
     }
 
     private fun findPersonalChat(username: String) : Chat {
         val user = findUser(username)
-        val t = acquireToken()
-        return server.getPersonalChatWith(t, user.id)
+        val validToken = acquireToken()
+        return server.getPersonalChatWith(validToken, user.id)
     }
 
     fun getPersonalChatHistory(username: String) : List<Message> {
         val chat = findPersonalChat(username)
-        val t = acquireToken()
-        return server.getChatMessages(t, chat.id).getMessages()
+        val validToken = acquireToken()
+        return server.getChatMessages(validToken, chat.id).getMessages()
     }
 
     fun authenticate(userCredentials: UserCredentials) : Boolean {
