@@ -14,7 +14,7 @@ class ClientSession(val ClientAPI : API) {
         val password = readLine()!!
         return UserCredentials(username, password)
     }
-    
+
     fun findUser(username : String) : User {
         val t = token
         if (t == null)
@@ -32,7 +32,10 @@ class ClientSession(val ClientAPI : API) {
     }
 
     fun findAvailableChats() : List<Chat> {
-        return ClientAPI.getAvailableChats().getChats()
+        val t = token
+        if (t == null)
+            throw NullTokenException("Token doesn't exist")
+        else return ClientAPI.getAvailableChats(t).getChats()
     }
 
     fun findPersonalChat(username: String) : Chat {
