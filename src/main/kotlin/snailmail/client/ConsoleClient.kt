@@ -3,7 +3,7 @@ package snailmail.client
 import snailmail.core.UserCredentials
 import snailmail.server.Server
 
-class ConsoleClient(val server : Server) {
+class ConsoleClient(server: Server) {
     private val client = Client(server)
 
     private fun getUserCredentials() : UserCredentials {
