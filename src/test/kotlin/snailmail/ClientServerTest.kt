@@ -22,14 +22,14 @@ class ClientServerTest {
         assert(alice.register(UserCredentials("alice", "alice123")))
         assert(bob.register(UserCredentials("bob", "bob345")))
 
-        assertEquals(alice.findAvailableChats(), emptyList())
-        assertEquals(bob.findAvailableChats(), emptyList())
+        assertEquals(emptyList(), alice.findAvailableChats())
+        assertEquals(emptyList(), bob.findAvailableChats())
 
-        assertEquals(alice.getPersonalChatHistory("alice"), emptyList())
+        assertEquals(emptyList(), alice.getPersonalChatHistory("alice"))
 
         alice.sendMessage("bob", "Hi, bob!")
-        assertEquals(bob.getPersonalChatHistory("alice").size, 1)
+        assertEquals(1, bob.getPersonalChatHistory("alice").size)
         val msg = bob.getPersonalChatHistory("alice").first()
-        assertEquals((msg as TextMessage).content, "Hi, bob!")
+        assertEquals("Hi, bob!", (msg as TextMessage).content)
     }
 }
