@@ -2,8 +2,11 @@ package snailmail.client
 
 import snailmail.core.*
 import snailmail.core.api.API
+import snailmail.core.api.*
 
 class ClientSession(val ClientAPI : API) {
+    private var token : AuthToken? = null
+
     private fun getUserCredentials() : UserCredentials {
         print("Username: ")
         val username = readLine()!!
@@ -11,14 +14,21 @@ class ClientSession(val ClientAPI : API) {
         val password = readLine()!!
         return UserCredentials(username, password)
     }
-
-    fun findUser(username : String) : User =
-        ClientAPI.searchByUsername(username) ?: throw UserNotFoundException("This user doesn't exist")
-
+    
+    fun findUser(username : String) : User {
+        val t = token
+        if (t == null)
+            throw NullTokenException("Token doesn't exist")
+        else
+            return ClientAPI.searchByUsername(t, username) ?: throw UserNotFoundException("This user doesn't exist")
+    }
     fun sendMessage(username: String, message: String) : TextMessage {
         val user = findUser(username)
-        return ClientAPI.sendTextMessage(message,
-                ClientAPI.getPersonalChatWith(user))
+        val t = token
+        if (t == null)
+            throw NullTokenException("Token doesn't exist")
+        else return ClientAPI.sendTextMessage(t, message,
+                ClientAPI.getPersonalChatWith(t, user.id).id)
     }
 
     fun findAvailableChats() : List<Chat> {
@@ -27,38 +37,52 @@ class ClientSession(val ClientAPI : API) {
 
     fun findPersonalChat(username: String) : Chat {
         val user = findUser(username)
-        return ClientAPI.getPersonalChatWith(user)
+        val t = token
+        if (t == null)
+            throw NullTokenException("Token doesn't exist")
+        else
+            return ClientAPI.getPersonalChatWith(t, user.id)
     }
 
     fun getPersonalChatHistory(username: String) : List<Message> {
         val chat = findPersonalChat(username)
-        return ClientAPI.getChatMessages(chat).getMessages()
+        val t = token
+        if (t == null)
+            throw NullTokenException("Token doesn't exist")
+        else
+            return ClientAPI.getChatMessages(t, chat.id).getMessages()
     }
 
     fun startSession(){
+        println("Welcome to SnailMail!")
         while(true) {
-            print("Welcome to SnailMail! Do you have an account? (y/n)")
-            var isSuccess = false
+            print("Do you have an account? (y/n)")
             val answer = readLine()!!
             var userCredentials = getUserCredentials();
             if (answer == "y") {
-                do {
-                    isSuccess = ClientAPI.authenticate(userCredentials).successful
-                    if (!isSuccess) {
+                while (true) {
+                    val authenticationResult = ClientAPI.authenticate(userCredentials)
+                    if (authenticationResult is AuthSuccessful) {
+                        token = authenticationResult.token
+                        break
+                    } else {
                         println("Username or/and password are incorrect")
                         userCredentials = getUserCredentials()
                     }
-                } while (!isSuccess)
-                break;
+                }
+                break
             } else if (answer == "n") {
-                do {
-                    isSuccess = ClientAPI.register(userCredentials).successful
-                    if (!isSuccess) {
+                while(true) {
+                    val authenticationResult = ClientAPI.register(userCredentials)
+                    if (authenticationResult is AuthSuccessful) {
+                        token = authenticationResult.token
+                        break
+                    } else {
                         println("Registration failed, try to change username")
                         userCredentials = getUserCredentials()
                     }
-                } while (!isSuccess)
-                break;
+                }
+                break
             } else {
                 print("Incorrect format of the answer, answer again: ")
             }
