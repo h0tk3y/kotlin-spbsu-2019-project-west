@@ -5,8 +5,7 @@ import snailmail.core.MessageRetriever
 import snailmail.core.TextMessage
 
 interface MessageAPI {
-    fun getChatMessages(chat: Chat): MessageRetriever
-    fun subscribeForNewMessages(): MessageRetriever
+    fun getChatMessages(token: AuthToken, chat: Chat): MessageRetriever
 
-    fun sendTextMessage(text: String, chat: Chat): TextMessage
+    fun sendTextMessage(token: AuthToken, text: String, chat: Chat): TextMessage
 }
