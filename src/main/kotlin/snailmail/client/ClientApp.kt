@@ -6,10 +6,10 @@ fun main() {
     val server = Server()
     val consoleClient = ConsoleClient(server)
     consoleClient.startSession()
-    var cmd = readLine()!!
-    while (cmd.toLowerCase() != "quit") {
+    var cmd = readLine()
+    while (cmd != null && cmd.toLowerCase() != "quit") {
         consoleClient.doCommand(cmd)
-        cmd = readLine()!!
+        cmd = readLine()
     }
     consoleClient.endSession()
 }

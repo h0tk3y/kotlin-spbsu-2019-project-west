@@ -5,11 +5,8 @@ package snailmail
 
 import snailmail.client.Client
 import snailmail.core.TextMessage
-import snailmail.core.User
 import snailmail.core.UserCredentials
-import snailmail.core.api.AuthSuccessful
 import snailmail.server.Server
-import javax.xml.soap.Text
 import kotlin.test.*
 
 class ClientServerTest {

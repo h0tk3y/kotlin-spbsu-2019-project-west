@@ -16,11 +16,11 @@ class ConsoleClient(server : Server) {
 
     fun startSession(){
         println("Welcome to SnailMail!")
+        print("Do you have an account? (y/n) ")
         while(true) {
-            print("Do you have an account? (y/n)")
             val answer = readLine()!!
-            var userCredentials = getUserCredentials();
             if (answer == "y") {
+                var userCredentials = getUserCredentials();
                 while (true) {
                     val authenticationResult = client.authenticate(userCredentials)
                     if (authenticationResult) {
@@ -30,8 +30,10 @@ class ConsoleClient(server : Server) {
                         userCredentials = getUserCredentials()
                     }
                 }
+                println("Successful authentication! You can write commands!")
                 break
             } else if (answer == "n") {
+                var userCredentials = getUserCredentials();
                 while(true) {
                     val authenticationResult = client.register(userCredentials)
                     if (authenticationResult) {
@@ -41,6 +43,7 @@ class ConsoleClient(server : Server) {
                         userCredentials = getUserCredentials()
                     }
                 }
+                println("Successful registration! You can write commands!")
                 break
             } else {
                 print("Incorrect format of the answer, answer again: ")
