@@ -6,13 +6,17 @@ import java.lang.Exception
 import java.util.*
 import kotlin.collections.HashMap
 
+class InvalidTokenException : Exception("Invalid Token")
+class InvalidChatId : Exception("Invalid chat id")
+class UserIsNotMemberException : Exception("User is not a member of this chat")
+
 class Server : API {
-    var userCredentials = HashMap<String, String>()
+    private var userCredentials = HashMap<String, String>()
     var chats = mutableListOf<Chat>()
-    var userByUsername = HashMap<String, User>()
+    private var userByUsername = HashMap<String, User>()
     var userIdByToken = HashMap<String, UUID>()
     var messagesByChatId = HashMap<UUID, MutableList<Message>>()
-    var chatByChatId = HashMap<UUID, Chat>()
+    private var chatByChatId = HashMap<UUID, Chat>()
 
     private fun tokenIsValid(token: AuthToken) : Boolean {
         return (userIdByToken[token] != null)
@@ -39,7 +43,7 @@ class Server : API {
 
     override fun getAvailableChats(token: AuthToken): ChatRetriever {
         if (!tokenIsValid(token))
-            throw Exception("Invalid token")
+            throw InvalidTokenException()
         return object : ChatRetriever {
             override fun getChats() : List<Chat> {
                 return this@Server.chats.filter { it.hasMember(userIdByToken[token]!!) }
@@ -49,7 +53,7 @@ class Server : API {
 
     override fun getPersonalChatWith(token: AuthToken, user: UUID): PersonalChat {
         if (!tokenIsValid(token))
-            throw Exception("Invalid token")
+            throw InvalidTokenException()
         val res = chats.find { when (it) {
             is PersonalChat -> it.hasMember(userIdByToken[token]!!) && it.hasMember(user)
             else -> false
@@ -64,8 +68,12 @@ class Server : API {
     }
 
     override fun getChatMessages(token: AuthToken, chat: UUID): MessageRetriever {
-        if (chatByChatId[chat] == null || !tokenIsValid(token) || !chatByChatId[chat]!!.hasMember(userIdByToken[token]!!))
-            throw Exception("Invalid token")
+        if (!tokenIsValid(token))
+            throw InvalidTokenException()
+        if (chatByChatId[chat] == null)
+            throw InvalidChatId()
+        if (!chatByChatId[chat]!!.hasMember(userIdByToken[token]!!))
+            throw UserIsNotMemberException()
         return object : MessageRetriever {
             override fun getMessages(): List<Message> {
                 return messagesByChatId[chat]!!
@@ -79,7 +87,7 @@ class Server : API {
 
     override fun sendTextMessage(token: AuthToken, text: String, chat: UUID): TextMessage {
         if (!tokenIsValid(token))
-            throw Exception("Invalid token")
+            throw InvalidTokenException()
         val date : Date = Calendar.getInstance().run {
             time
         }
@@ -91,7 +99,7 @@ class Server : API {
 
     override fun createGroupChat(token: AuthToken, title: String, invitedMembers: List<UUID>): GroupChat {
         if (!tokenIsValid(token))
-            throw Exception("Invalid token")
+            throw InvalidTokenException()
         val chat = GroupChat(UUID.randomUUID(), userIdByToken[token]!!, invitedMembers)
         chats.add(chat)
         chatByChatId[chat.id] = chat
@@ -101,7 +109,7 @@ class Server : API {
 
     override fun searchByUsername(token: AuthToken, username: String): User? {
         if (!tokenIsValid(token))
-            throw Exception("Invalid token")
+            throw InvalidTokenException()
         return userByUsername[username]
     }
 }
