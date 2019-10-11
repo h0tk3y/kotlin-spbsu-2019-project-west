@@ -20,6 +20,10 @@ repositories {
     jcenter()
 }
 
+
+ext.ktor_version = '1.2.4'
+
+
 dependencies {
     // Align versions of all Kotlin components
     implementation platform('org.jetbrains.kotlin:kotlin-bom')
@@ -33,6 +37,9 @@ dependencies {
     // Use the Kotlin JUnit integration.
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit'
     testCompile "org.jetbrains.kotlin:kotlin-test:1.3.41"
+
+    compile "io.ktor:ktor-server-netty:$ktor_version"
+    implementation "io.ktor:ktor-websockets:$ktor_version"
 }
 
 jacocoTestReport {
@@ -44,7 +51,25 @@ jacocoTestReport {
 
 check.dependsOn jacocoTestReport
 
-application {
-    // Define the main class for the application
-    mainClassName = 'snailmail.AppKt'
+def createScript(project, mainClass, name) {
+    project.tasks.create(name: name, type: CreateStartScripts) {
+        outputDir       = new File(project.buildDir, 'scripts')
+        mainClassName   = mainClass
+        applicationName = name
+        classpath       = project.tasks[JavaPlugin.JAR_TASK_NAME].outputs.files + project.configurations.runtime
+    }
+    project.tasks[name].dependsOn(project.jar)
+
+    project.applicationDistribution.with {
+        into("bin") {
+            from(project.tasks[name])
+            fileMode = 0755
+        }
+    }
 }
+
+startScripts.enabled = false
+run.enabled = false
+
+createScript(project, 'snailmail.standalone.client.StandaloneClient', 'client')
+createScript(project, 'snailmail.standalone.server.StandaloneServer', 'server')
