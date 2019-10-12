@@ -16,7 +16,7 @@ data class GetPersonalChatWithResponse(val chat: PersonalChat): ServerResponse("
 data class CreateGroupChatResponse(val chat: GroupChat): ServerResponse("chat.createGroupChat")
 
 data class GetChatMessagesResponse(val messages: List<Message>): ServerResponse("message.getChatMessages")
-data class SendTextMessageResponse(val message: Message): ServerResponse("message.sendTextMessage")
+data class SendTextMessageResponse(val message: TextMessage): ServerResponse("message.sendTextMessage")
 
 data class SearchByUsernameResponse(val user: User?): ServerResponse("user.searchByUsername")
 

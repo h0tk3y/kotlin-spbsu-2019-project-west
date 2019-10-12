@@ -9,7 +9,7 @@ import kotlin.reflect.KClass
 typealias AuthToken = String
 
 @TypeFor(field = "status", adapter = AuthenticationResultAdapter::class)
-sealed class AuthenticationResult(val type: String) {
+sealed class AuthenticationResult(val status: String) {
     abstract val successful: Boolean
 }
 

@@ -1,10 +1,10 @@
 package snailmail.client
 
 import snailmail.core.UserCredentials
-import snailmail.server.Server
+import snailmail.core.api.API
 
-class ConsoleClient(server : Server) {
-    private val client = Client(server)
+class ConsoleClient(api : API) {
+    private val client = Client(api)
 
     private fun getUserCredentials() : UserCredentials {
         print("Username: ")
@@ -12,6 +12,16 @@ class ConsoleClient(server : Server) {
         print("Password: ")
         val password = readLine()!!
         return UserCredentials(username, password)
+    }
+
+    fun run() {
+        startSession()
+        var cmd = readLine()
+        while (cmd != null && cmd.toLowerCase() != "quit") {
+            doCommand(cmd)
+            cmd = readLine()
+        }
+        endSession()
     }
 
     fun startSession(){
