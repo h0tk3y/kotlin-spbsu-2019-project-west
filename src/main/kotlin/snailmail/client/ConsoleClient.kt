@@ -5,11 +5,12 @@ import snailmail.core.PersonalChat
 import snailmail.core.UserCredentials
 import snailmail.server.Server
 import java.lang.Exception
+import snailmail.core.api.API
 
-class ConsoleClient(server: Server) {
-    private val client = Client(server)
+class ConsoleClient(api : API) {
+    private val client = Client(api)
 
-    private val commands_description = mapOf<Pair<String, List<String>>, String>(
+    private val commandsDescription = mapOf<Pair<String, List<String>>, String>(
             Pair(":help", listOf(""))
                     to "display this list of commands",
             Pair(":exit", listOf(""))
@@ -29,6 +30,7 @@ class ConsoleClient(server: Server) {
             Pair(":createGroupChat", listOf("<chatTitle> [<username>]"))
                     to "create group chat with title <chatTitle> and invite all users from [<username>]"
     )
+
     private fun getUserCredentials() : UserCredentials {
         print("Username: ")
         val username = readLine()!!
@@ -186,7 +188,7 @@ class ConsoleClient(server: Server) {
                 }
             }
             ":help" -> {
-                commands_description.forEach {
+                commandsDescription.forEach {
                     println("${it.key.first.plus(" ").
                             plus(it.key.second.joinToString(separator = " ")).padEnd(50)} - ${it.value}")
                 }

@@ -9,7 +9,7 @@ class TextMessage(
         date: Date,
         seen: Boolean = false,
         val content: String
-) : Message(id, chatId, sender, date, seen) {
+) : Message("text", id, chatId, sender, date, seen) {
     override fun toString(): String {
         return "at $date: $content"
     }
