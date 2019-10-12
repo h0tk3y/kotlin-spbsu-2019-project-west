@@ -1,4 +1,3 @@
-
 package snailmail
 
 import snailmail.core.*

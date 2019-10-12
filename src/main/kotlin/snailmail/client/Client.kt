@@ -13,8 +13,8 @@ class Client(val server : Server) {
         token ?: throw NoAuthTokenException("Token doesn't exist")
 
     fun findUser(username : String) : User {
-        val t = acquireToken()
-        return server.searchByUsername(t, username) ?:
+        val authToken = acquireToken()
+        return server.searchByUsername(authToken, username) ?:
         throw UserNotFoundException("This user doesn't exist")
     }
 

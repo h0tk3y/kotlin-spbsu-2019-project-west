@@ -4,6 +4,7 @@ import snailmail.core.GroupChat
 import snailmail.core.PersonalChat
 import snailmail.core.UserCredentials
 import snailmail.server.Server
+import java.lang.Exception
 
 class ConsoleClient(server: Server) {
     private val client = Client(server)
@@ -41,8 +42,8 @@ class ConsoleClient(server: Server) {
         while(true) {
             print("Do you have an account? (y/n) ")
             val answer = readLine()!!
-            var userCredentials = getUserCredentials();
             if (answer == "y") {
+                var userCredentials = getUserCredentials();
                 while (true) {
                     val authenticationResult = client.authenticate(userCredentials)
                     if (authenticationResult) {
@@ -52,8 +53,10 @@ class ConsoleClient(server: Server) {
                         userCredentials = getUserCredentials()
                     }
                 }
+                println("Successful authentication! You can write commands!")
                 break
             } else if (answer == "n") {
+                var userCredentials = getUserCredentials();
                 while(true) {
                     val authenticationResult = client.register(userCredentials)
                     if (authenticationResult) {
@@ -63,6 +66,7 @@ class ConsoleClient(server: Server) {
                         userCredentials = getUserCredentials()
                     }
                 }
+                println("Successful registration! You can write commands!")
                 break
             } else {
                 print("Incorrect format of the answer, answer again: ")
@@ -84,6 +88,8 @@ class ConsoleClient(server: Server) {
                         isSuccess = true
                     } catch (e: MessengerException) {
                         println(e.message)
+                    } catch (e: Exception) {
+                        println(e.message)
                     }
                 }
             }
@@ -96,6 +102,8 @@ class ConsoleClient(server: Server) {
                         client.sendMessageToGroupChat(chatTitle, message)
                         isSuccess = true
                     } catch (e: MessengerException) {
+                        println(e.message)
+                    } catch (e: Exception) {
                         println(e.message)
                     }
                 }
@@ -113,6 +121,8 @@ class ConsoleClient(server: Server) {
                     isSuccess = true
                 } catch (e: MessengerException) {
                     println(e.message)
+                } catch (e: Exception) {
+                    println(e.message)
                 }
             }
             ":getGroupChat" -> {
@@ -126,6 +136,8 @@ class ConsoleClient(server: Server) {
                         isSuccess = true
                     } catch (e: MessengerException) {
                         println(e.message)
+                    } catch (e: Exception) {
+                        println(e.message)
                     }
                 }
             }
@@ -138,6 +150,8 @@ class ConsoleClient(server: Server) {
                         isSuccess = true;
                     } catch (e: MessengerException) {
                         println(e.message)
+                    } catch (e: Exception) {
+                        println(e.message)
                     }
                 }
             }
@@ -149,6 +163,8 @@ class ConsoleClient(server: Server) {
                         println(user.displayName)
                         isSuccess = true
                     } catch (e: MessengerException) {
+                        println(e.message)
+                    } catch (e: Exception) {
                         println(e.message)
                     }
                 }
@@ -163,6 +179,8 @@ class ConsoleClient(server: Server) {
                         }
                         isSuccess = true
                     } catch (e: MessengerException) {
+                        println(e.message)
+                    } catch (e: Exception) {
                         println(e.message)
                     }
                 }
