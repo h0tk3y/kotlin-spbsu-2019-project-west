@@ -4,6 +4,7 @@ import snailmail.core.*
 import snailmail.core.api.API
 import snailmail.core.api.*
 import snailmail.server.Server
+import java.util.*
 
 class Client(val server : Server) {
     private var token : AuthToken? = null
@@ -18,10 +19,16 @@ class Client(val server : Server) {
     }
 
     fun sendMessage(username: String, message: String) : TextMessage {
+        val authToken = acquireToken()
         val user = findUser(username)
-        val t = acquireToken()
-        return server.sendTextMessage(t, message,
-                server.getPersonalChatWith(t, user.id).id)
+        return server.sendTextMessage(authToken, message,
+                server.getPersonalChatWith(authToken, user.id).id)
+    }
+
+    fun sendMessageToGroupChat(chatTitle: String, message: String) : TextMessage {
+        val authToken = acquireToken()
+        val chat = findGroupChat(chatTitle)
+        return server.sendTextMessage(authToken, message, chat.id)
     }
 
     fun findAvailableChats() : List<Chat> {
@@ -29,18 +36,35 @@ class Client(val server : Server) {
         return server.getAvailableChats(t).getChats()
     }
 
-    private fun findPersonalChat(username: String) : Chat {
+    private fun findPersonalChatWith(username: String) : PersonalChat {
+        val authToken = acquireToken()
         val user = findUser(username)
-        val t = acquireToken()
-        return server.getPersonalChatWith(t, user.id)
+        return server.getPersonalChatWith(authToken, user.id)
     }
 
     fun getPersonalChatHistory(username: String) : List<Message> {
-        val chat = findPersonalChat(username)
-        val t = acquireToken()
-        return server.getChatMessages(t, chat.id).getMessages()
+        val authToken = acquireToken()
+        val chat = findPersonalChatWith(username)
+        return server.getChatMessages(authToken, chat.id).getMessages()
     }
 
+    private fun findGroupChat(chatTitle: String) : GroupChat {
+        val authToken = acquireToken()
+        return server.getAvailableChats(authToken).getChats().filterIsInstance<GroupChat>().find { it.title == chatTitle }
+                ?: throw ChatNotFoundException("This group chat doesn't exist!")
+    }
+
+    fun getGroupChatHistory(chatTitle : String) : List<Message> {
+        val authToken = acquireToken()
+        val chat = findGroupChat(chatTitle)
+        return server.getChatMessages(authToken, chat.id).getMessages()
+    }
+
+    fun createGroupChat(chatTitle: String, members: List<String>) : GroupChat {
+        val authToken = acquireToken()
+        val invitedMembers = members.map { findUser(it).id }
+        return server.createGroupChat(authToken, chatTitle, invitedMembers)
+    }
     fun authenticate(userCredentials: UserCredentials) : Boolean {
         val authenticationResult = server.authenticate(userCredentials)
         if (authenticationResult is AuthSuccessful)
