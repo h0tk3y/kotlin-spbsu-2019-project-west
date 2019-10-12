@@ -52,7 +52,6 @@ class WebsocketServer(private val api : API) {
                             val req = klaxon.parse<ServerRequest>(text)
                             if (req != null) {
                                 val res = klaxon.toJsonString(processRequest(req))
-                                println(res)
                                 outgoing.send(Frame.Text(res))
                             }
                         }
