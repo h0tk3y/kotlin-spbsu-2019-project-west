@@ -3,6 +3,7 @@ package snailmail.client
 import snailmail.core.*
 import snailmail.core.api.*
 import snailmail.server.Server
+import java.util.*
 
 class Client(private val api : API) {
     private var token : AuthToken? = null
@@ -17,10 +18,16 @@ class Client(private val api : API) {
     }
 
     fun sendMessage(username: String, message: String) : TextMessage {
-        val user = findUser(username)
         val authToken = acquireToken()
+        val user = findUser(username)
         return api.sendTextMessage(authToken, message,
                 api.getPersonalChatWith(authToken, user.id).id)
+    }
+
+    fun sendMessageToGroupChat(chatTitle: String, message: String) : TextMessage {
+        val authToken = acquireToken()
+        val chat = findGroupChat(chatTitle)
+        return api.sendTextMessage(authToken, message, chat.id)
     }
 
     fun findAvailableChats() : List<Chat> {
@@ -28,16 +35,34 @@ class Client(private val api : API) {
         return api.getAvailableChats(authToken).getChats()
     }
 
-    private fun findPersonalChat(username: String) : Chat {
+    private fun findPersonalChatWith(username: String) : PersonalChat {
         val user = findUser(username)
         val authToken = acquireToken()
         return api.getPersonalChatWith(authToken, user.id)
     }
 
     fun getPersonalChatHistory(username: String) : List<Message> {
-        val chat = findPersonalChat(username)
         val authToken = acquireToken()
+        val chat = findPersonalChatWith(username)
         return api.getChatMessages(authToken, chat.id).getMessages()
+    }
+
+    private fun findGroupChat(chatTitle: String) : GroupChat {
+        val authToken = acquireToken()
+        return api.getAvailableChats(authToken).getChats().filterIsInstance<GroupChat>().find { it.title == chatTitle }
+                ?: throw ChatNotFoundException("This group chat doesn't exist!")
+    }
+
+    fun getGroupChatHistory(chatTitle : String) : List<Message> {
+        val authToken = acquireToken()
+        val chat = findGroupChat(chatTitle)
+        return api.getChatMessages(authToken, chat.id).getMessages()
+    }
+
+    fun createGroupChat(chatTitle: String, members: List<String>) : GroupChat {
+        val authToken = acquireToken()
+        val invitedMembers = members.map { findUser(it).id }
+        return api.createGroupChat(authToken, chatTitle, invitedMembers)
     }
 
     fun authenticate(userCredentials: UserCredentials) : Boolean {

@@ -100,7 +100,7 @@ class Server : API {
     override fun createGroupChat(token: AuthToken, title: String, invitedMembers: List<UUID>): GroupChat {
         if (!tokenIsValid(token))
             throw InvalidTokenException()
-        val chat = GroupChat(UUID.randomUUID(), userIdByToken[token]!!, invitedMembers)
+        val chat = GroupChat(UUID.randomUUID(), title, userIdByToken[token]!!, invitedMembers)
         chats.add(chat)
         chatByChatId[chat.id] = chat
         messagesByChatId[chat.id] = mutableListOf()
