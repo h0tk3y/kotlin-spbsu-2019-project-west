@@ -1,11 +1,34 @@
 package snailmail.client
 
+import snailmail.core.GroupChat
+import snailmail.core.PersonalChat
 import snailmail.core.UserCredentials
 import snailmail.server.Server
+import java.lang.Exception
 
-class ConsoleClient(server : Server) {
+class ConsoleClient(server: Server) {
     private val client = Client(server)
 
+    private val commands_description = mapOf<Pair<String, List<String>>, String>(
+            Pair(":help", listOf(""))
+                    to "display this list of commands",
+            Pair(":exit", listOf(""))
+                    to "exit SnailMail",
+            Pair(":send", listOf("<username>", "<message>"))
+                    to "send the message to the user with <username>",
+            Pair(":sendToGroupChat", listOf("<chatTitle>", "<message>"))
+                    to "send the message to the <chatTitle> group chat",
+            Pair(":viewAvailableChats", listOf(""))
+                    to "show all chats you are member of",
+            Pair(":findUsername", listOf("<username>"))
+                    to "find <username> and show his info",
+            Pair(":getGroupChat", listOf("<chatTitle>"))
+                    to "find and show history of <chatTitle> group chat",
+            Pair(":getPersonalChatWith", listOf("<username>"))
+                    to "find and show history of chat with <username>",
+            Pair(":createGroupChat", listOf("<chatTitle> [<username>]"))
+                    to "create group chat with title <chatTitle> and invite all users from [<username>]"
+    )
     private fun getUserCredentials() : UserCredentials {
         print("Username: ")
         val username = readLine()!!
@@ -16,8 +39,8 @@ class ConsoleClient(server : Server) {
 
     fun startSession(){
         println("Welcome to SnailMail!")
-        print("Do you have an account? (y/n) ")
         while(true) {
+            print("Do you have an account? (y/n) ")
             val answer = readLine()!!
             if (answer == "y") {
                 var userCredentials = getUserCredentials();
@@ -51,68 +74,142 @@ class ConsoleClient(server : Server) {
         }
     }
 
-    fun doCommand(cmd : String) {
+    private fun executeCommand(cmd : String) : Boolean {
         val args = cmd.split(' ')
         var isSuccess = false;
         when(args[0]) {
-            "/send" -> {
+            ":send" -> {
                 if (args.size >= 3) {
                     val message = args.filterIndexed { index, _ -> index >= 2 }
                             .joinToString(separator = " ")
                     try {
-                        client.sendMessage(args[1], message)
+                        val username = args[1]
+                        client.sendMessage(username, message)
                         isSuccess = true
                     } catch (e: MessengerException) {
+                        println(e.message)
+                    } catch (e: Exception) {
                         println(e.message)
                     }
                 }
             }
-            "/viewAvailableChats" -> {
+            ":sendToGroupChat" -> {
+                if (args.size >= 3) {
+                    val message = args.filterIndexed { index, _ -> index >= 2 }
+                            .joinToString(separator = " ")
+                    val chatTitle = args[1]
+                    try {
+                        client.sendMessageToGroupChat(chatTitle, message)
+                        isSuccess = true
+                    } catch (e: MessengerException) {
+                        println(e.message)
+                    } catch (e: Exception) {
+                        println(e.message)
+                    }
+                }
+            }
+            ":viewAvailableChats" -> {
                 try {
                     val availableChats = client.findAvailableChats()
                     for (chat in availableChats) {
-                        println(chat)
+                        if (chat is PersonalChat) {
+                            println(chat.person1.toString() + " " + chat.person2.toString())
+                        } else if (chat is GroupChat) {
+                            println(chat.title)
+                        }
                     }
                     isSuccess = true
                 } catch (e: MessengerException) {
-                    print(e.message)
+                    println(e.message)
+                } catch (e: Exception) {
+                    println(e.message)
                 }
             }
-            "/getChatMessages" -> {
-                isSuccess = true
-                //TO-DO
-            }
-            "/findUsername" -> {
+            ":getGroupChat" -> {
                 if (args.size == 2) {
+                    val chatTitle = args[1]
                     try {
-                        val user = client.findUser(args[1])
-                        println(user)
+                        val chatHistory = client.getGroupChatHistory(chatTitle)
+                        for (message in chatHistory) {
+                            println(message)
+                        }
                         isSuccess = true
                     } catch (e: MessengerException) {
+                        println(e.message)
+                    } catch (e: Exception) {
                         println(e.message)
                     }
                 }
             }
-            "/getPersonalChat" -> {
-                if (args.size == 2) {
+            ":createGroupChat" -> {
+                if (args.size >= 3) {
+                    val chatTitle = args[1]
+                    val members = args.filterIndexed { index, _ -> index >= 2 }
                     try {
-                        val history = client.getPersonalChatHistory(args[1])
+                        val chat = client.createGroupChat(chatTitle, members)
+                        isSuccess = true;
+                    } catch (e: MessengerException) {
+                        println(e.message)
+                    } catch (e: Exception) {
+                        println(e.message)
+                    }
+                }
+            }
+            ":findUsername" -> {
+                if (args.size == 2) {
+                    val username = args[1]
+                    try {
+                        val user = client.findUser(username)
+                        println(user.displayName)
+                        isSuccess = true
+                    } catch (e: MessengerException) {
+                        println(e.message)
+                    } catch (e: Exception) {
+                        println(e.message)
+                    }
+                }
+            }
+            ":getPersonalChatWith" -> {
+                if (args.size == 2) {
+                    val username = args[1]
+                    try {
+                        val history = client.getPersonalChatHistory(username)
                         for (message in history) {
                             println(message)
                         }
                         isSuccess = true
-                    } catch (e: UserNotFoundException) {
+                    } catch (e: MessengerException) {
+                        println(e.message)
+                    } catch (e: Exception) {
                         println(e.message)
                     }
                 }
+            }
+            ":help" -> {
+                commands_description.forEach {
+                    println("${it.key.first.plus(" ").
+                            plus(it.key.second.joinToString(separator = " ")).padEnd(50)} - ${it.value}")
+                }
+                isSuccess = true;
+            }
+            ":exit" -> {
+                return false;
             }
             else -> isSuccess = false
         }
         if (!isSuccess)
             println("Incorrect command, try again...")
+        return true;
+    }
+
+    fun writeCommand() : Boolean {
+        print("> ")
+        val cmd = readLine()
+        if (cmd == null || cmd.toLowerCase() == "quit")
+            return false;
+        return executeCommand(cmd)
     }
 
     fun endSession() {
     }
-
 }
