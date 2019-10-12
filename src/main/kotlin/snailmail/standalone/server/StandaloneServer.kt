@@ -1,5 +1,8 @@
 package snailmail.standalone.server
 
+import snailmail.server.Server
+import snailmail.server.transport.WebsocketServer
+
 fun main() {
-    println("Hello, it is server!")
+    WebsocketServer(Server()).run()
 }
