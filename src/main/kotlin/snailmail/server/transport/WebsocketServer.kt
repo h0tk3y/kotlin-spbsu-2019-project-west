@@ -39,7 +39,9 @@ class WebsocketServer(private val api : API) {
     }
 
     fun run(port: Int = 9999) {
-        val klaxon = Klaxon().converter(UUIDConverter())
+        val klaxon = Klaxon()
+                .converter(UUIDConverter())
+                .converter(DateConverter())
 
         embeddedServer(Netty, port) {
             install(WebSockets)

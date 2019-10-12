@@ -22,7 +22,9 @@ class WebsocketClient(private val host: String, private val port: Int) : API {
     private val responses = Channel<ServerResponse>()
 
     suspend fun run() {
-        val klaxon = Klaxon().converter(UUIDConverter())
+        val klaxon = Klaxon()
+                .converter(UUIDConverter())
+                .converter(DateConverter())
 
         client.ws(
                 method = HttpMethod.Get,

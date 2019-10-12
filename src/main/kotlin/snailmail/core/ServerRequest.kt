@@ -24,7 +24,7 @@ data class SendTextMessageRequest(val token: AuthToken, val text: String,
 data class SearchByUsernameRequest(val token: AuthToken, val username: String): ServerRequest("user.searchByUsername")
 
 
-class ServerRequestAdapter: TypeAdapter<ServerRequest> {
+class ServerRequestAdapter : TypeAdapter<ServerRequest> {
     override fun classFor(type: Any): KClass<out ServerRequest> = when (type as String) {
         "auth.authenticate" -> AuthenticateRequest::class
         "auth.register" -> RegisterRequest::class
