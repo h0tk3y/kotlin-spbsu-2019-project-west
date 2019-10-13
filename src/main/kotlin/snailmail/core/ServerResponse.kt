@@ -1,9 +1,9 @@
 package snailmail.core
 
-import com.beust.klaxon.*
+import com.beust.klaxon.TypeAdapter
+import com.beust.klaxon.TypeFor
 import snailmail.core.api.AuthenticationResult
 import kotlin.reflect.KClass
-import java.lang.*
 
 @TypeFor(field = "method", adapter = ServerResponseAdapter::class)
 sealed class ServerResponse(val method: String)
@@ -19,6 +19,7 @@ data class GetChatMessagesResponse(val messages: List<Message>): ServerResponse(
 data class SendTextMessageResponse(val message: TextMessage): ServerResponse("message.sendTextMessage")
 
 data class SearchByUsernameResponse(val user: User?): ServerResponse("user.searchByUsername")
+data class GetUserByIdResponse(val user: User?) : ServerResponse("user.getUserById")
 
 class ServerResponseAdapter: TypeAdapter<ServerResponse> {
     override fun classFor(type: Any): KClass<out ServerResponse> = when (type as String) {
@@ -30,6 +31,7 @@ class ServerResponseAdapter: TypeAdapter<ServerResponse> {
         "message.getChatMessages" -> GetChatMessagesResponse::class
         "message.sendTextMessage" -> SendTextMessageResponse::class
         "user.searchByUsername" -> SearchByUsernameResponse::class
+        "user.getUserById" -> GetUserByIdResponse::class
         else -> throw IllegalArgumentException("Unknown method: $type")
     }
 }

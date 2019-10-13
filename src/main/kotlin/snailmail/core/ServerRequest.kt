@@ -1,8 +1,8 @@
 package snailmail.core
 
-import com.beust.klaxon.*
+import com.beust.klaxon.TypeAdapter
+import com.beust.klaxon.TypeFor
 import snailmail.core.api.AuthToken
-import java.lang.*
 import java.util.*
 import kotlin.reflect.KClass
 
@@ -22,7 +22,7 @@ data class SendTextMessageRequest(val token: AuthToken, val text: String,
                                   val chat: UUID): ServerRequest("message.sendTextMessage")
 
 data class SearchByUsernameRequest(val token: AuthToken, val username: String): ServerRequest("user.searchByUsername")
-
+data class GetUserByIdRequest(val token: AuthToken, val id: UUID) : ServerRequest("user.getUserById")
 
 class ServerRequestAdapter : TypeAdapter<ServerRequest> {
     override fun classFor(type: Any): KClass<out ServerRequest> = when (type as String) {
@@ -34,6 +34,7 @@ class ServerRequestAdapter : TypeAdapter<ServerRequest> {
         "message.getChatMessages" -> GetChatMessagesRequest::class
         "message.sendTextMessage" -> SendTextMessageRequest::class
         "user.searchByUsername" -> SearchByUsernameRequest::class
+        "user.getUserById" -> GetUserByIdRequest::class
         else -> throw IllegalArgumentException("Unknown method: $type")
     }
 }

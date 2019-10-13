@@ -2,10 +2,11 @@ package snailmail.server.transport
 
 import com.beust.klaxon.Klaxon
 import io.ktor.application.install
-import io.ktor.http.cio.websocket.*
-import io.ktor.routing.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
+import io.ktor.http.cio.websocket.Frame
+import io.ktor.http.cio.websocket.readText
+import io.ktor.routing.routing
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
 import io.ktor.websocket.WebSockets
 import io.ktor.websocket.webSocket
 import snailmail.core.*
@@ -36,6 +37,9 @@ class WebsocketServer(private val api : API) {
 
         is SearchByUsernameRequest ->
             SearchByUsernameResponse(api.searchByUsername(req.token, req.username))
+
+        is GetUserByIdRequest ->
+            GetUserByIdResponse(api.getUserById(req.token, req.id))
     }
 
     fun run(port: Int = 9999) {

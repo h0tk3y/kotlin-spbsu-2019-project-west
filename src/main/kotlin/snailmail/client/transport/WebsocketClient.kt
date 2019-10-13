@@ -1,10 +1,12 @@
 package snailmail.client.transport
 
 import com.beust.klaxon.Klaxon
-import io.ktor.client.*
-import io.ktor.client.features.websocket.*
+import io.ktor.client.HttpClient
+import io.ktor.client.features.websocket.WebSockets
+import io.ktor.client.features.websocket.ws
 import io.ktor.http.HttpMethod
-import io.ktor.http.cio.websocket.*
+import io.ktor.http.cio.websocket.Frame
+import io.ktor.http.cio.websocket.readText
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import snailmail.core.*
@@ -88,5 +90,10 @@ class WebsocketClient(private val host: String, private val port: Int) : API {
     override fun searchByUsername(token: AuthToken, username: String): User? {
         val res = request(SearchByUsernameRequest(token, username))
         return (res as SearchByUsernameResponse).user
+    }
+
+    override fun getUserById(token: AuthToken, id: UUID): User? {
+        val res = request(GetUserByIdRequest(token, id))
+        return (res as GetUserByIdResponse).user
     }
 }
