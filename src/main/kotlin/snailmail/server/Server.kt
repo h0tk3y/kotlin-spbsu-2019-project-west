@@ -2,7 +2,6 @@ package snailmail.server
 
 import snailmail.core.*
 import snailmail.core.api.*
-import java.lang.Exception
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -14,11 +13,12 @@ class Server : API {
     private var userCredentials = HashMap<String, String>()
     var chats = mutableListOf<Chat>()
     private var userByUsername = HashMap<String, User>()
+    private var userById = HashMap<UUID, User>()
     var userIdByToken = HashMap<String, UUID>()
     var messagesByChatId = HashMap<UUID, MutableList<Message>>()
     private var chatByChatId = HashMap<UUID, Chat>()
 
-    private fun tokenIsValid(token: AuthToken) : Boolean {
+    private fun tokenIsValid(token: AuthToken): Boolean {
         return (userIdByToken[token] != null)
     }
 
@@ -28,15 +28,16 @@ class Server : API {
             val token = credentials.username
             userIdByToken[token] = userByUsername[credentials.username]!!.id
             AuthSuccessful(token)
-        }
-        else AuthWrongCredentials()
+        } else AuthWrongCredentials()
     }
 
     override fun register(credentials: UserCredentials): AuthenticationResult {
         return if (userCredentials.contains(credentials.username)) AuthRegisterFailed("")
         else {
+            val user = User(UUID.randomUUID(), credentials.username, credentials.username)
             userCredentials[credentials.username] = credentials.password
-            userByUsername[credentials.username] = User(UUID.randomUUID(), credentials.username, credentials.username)
+            userByUsername[credentials.username] = user
+            userById[user.id] = user
             authenticate(credentials)
         }
     }
@@ -45,7 +46,7 @@ class Server : API {
         if (!tokenIsValid(token))
             throw InvalidTokenException()
         return object : ChatRetriever {
-            override fun getChats() : List<Chat> {
+            override fun getChats(): List<Chat> {
                 return this@Server.chats.filter { it.hasMember(userIdByToken[token]!!) }
             }
         }
@@ -54,10 +55,12 @@ class Server : API {
     override fun getPersonalChatWith(token: AuthToken, user: UUID): PersonalChat {
         if (!tokenIsValid(token))
             throw InvalidTokenException()
-        val res = chats.find { when (it) {
-            is PersonalChat -> it.hasMember(userIdByToken[token]!!) && it.hasMember(user)
-            else -> false
-        } }
+        val res = chats.find {
+            when (it) {
+                is PersonalChat -> it.hasMember(userIdByToken[token]!!) && it.hasMember(user)
+                else -> false
+            }
+        }
         return if (res == null) {
             val chat = PersonalChat(UUID.randomUUID(), userIdByToken[token]!!, user)
             chats.add(chat)
@@ -88,7 +91,7 @@ class Server : API {
     override fun sendTextMessage(token: AuthToken, text: String, chat: UUID): TextMessage {
         if (!tokenIsValid(token))
             throw InvalidTokenException()
-        val date : Date = Calendar.getInstance().run {
+        val date: Date = Calendar.getInstance().run {
             time
         }
         val msg = TextMessage(id = UUID.randomUUID(), chatId = chat,
@@ -111,5 +114,11 @@ class Server : API {
         if (!tokenIsValid(token))
             throw InvalidTokenException()
         return userByUsername[username]
+    }
+
+    override fun getUserById(token: AuthToken, id: UUID): User? {
+        if (!tokenIsValid(token))
+            throw InvalidTokenException()
+        return userById[id]
     }
 }

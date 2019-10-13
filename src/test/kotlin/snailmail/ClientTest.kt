@@ -1,13 +1,14 @@
 package snailmail
 
 import snailmail.client.Client
-import snailmail.client.NoAuthTokenException
+import snailmail.client.NotAuthenticatedException
 import snailmail.client.UserNotFoundException
-import snailmail.server.Server
 import snailmail.core.TextMessage
 import snailmail.core.UserCredentials
-
-import kotlin.test.*
+import snailmail.server.Server
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class ClientTest {
     @Test
@@ -259,7 +260,7 @@ class ClientTest {
 
         assert(user.register(UserCredentials("user", "abacaba")))
 
-        assertFailsWith<NoAuthTokenException> { userNoAuth.sendMessage("user", "hi!") }
+        assertFailsWith<NotAuthenticatedException> { userNoAuth.sendMessage("user", "hi!") }
     }
 
     @Test
@@ -267,7 +268,7 @@ class ClientTest {
         val server = Server()
         val userNoAuth = Client(server)
 
-        assertFailsWith<NoAuthTokenException> { userNoAuth.findAvailableChats() }
+        assertFailsWith<NotAuthenticatedException> { userNoAuth.findAvailableChats() }
     }
 
     @Test
@@ -278,7 +279,7 @@ class ClientTest {
 
         assert(user.register(UserCredentials("user", "abacaba")))
 
-        assertFailsWith<NoAuthTokenException> { userNoAuth.getPersonalChatHistory("user") }
+        assertFailsWith<NotAuthenticatedException> { userNoAuth.getPersonalChatHistory("user") }
     }
 
     @Test
@@ -289,7 +290,7 @@ class ClientTest {
 
         assert(user.register(UserCredentials("user", "abacaba")))
 
-        assertFailsWith<NoAuthTokenException> { userNoAuth.findUser("user") }
+        assertFailsWith<NotAuthenticatedException> { userNoAuth.findUser("user") }
     }
 
     @Test
