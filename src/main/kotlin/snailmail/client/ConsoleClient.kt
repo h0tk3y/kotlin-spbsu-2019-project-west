@@ -2,12 +2,11 @@ package snailmail.client
 
 import snailmail.core.GroupChat
 import snailmail.core.PersonalChat
+import snailmail.core.TextMessage
 import snailmail.core.UserCredentials
-import snailmail.server.Server
-import java.lang.Exception
 import snailmail.core.api.API
 
-class ConsoleClient(api : API) {
+class ConsoleClient(api: API) {
     private val client = Client(api)
 
     private val commandsDescription = mapOf<Pair<String, List<String>>, String>(
@@ -31,7 +30,7 @@ class ConsoleClient(api : API) {
                     to "create group chat with title <chatTitle> and invite all users from [<username>]"
     )
 
-    private fun getUserCredentials() : UserCredentials {
+    private fun getUserCredentials(): UserCredentials {
         print("Username: ")
         val username = readLine()!!
         print("Password: ")
@@ -39,13 +38,13 @@ class ConsoleClient(api : API) {
         return UserCredentials(username, password)
     }
 
-    fun startSession(){
+    fun startSession() {
         println("Welcome to SnailMail!")
-        while(true) {
+        while (true) {
             print("Do you have an account? (y/n) ")
             val answer = readLine()!!
             if (answer == "y") {
-                var userCredentials = getUserCredentials();
+                var userCredentials = getUserCredentials()
                 while (true) {
                     val authenticationResult = client.authenticate(userCredentials)
                     if (authenticationResult) {
@@ -58,8 +57,8 @@ class ConsoleClient(api : API) {
                 println("Successful authentication! You can write commands!")
                 break
             } else if (answer == "n") {
-                var userCredentials = getUserCredentials();
-                while(true) {
+                var userCredentials = getUserCredentials()
+                while (true) {
                     val authenticationResult = client.register(userCredentials)
                     if (authenticationResult) {
                         break
@@ -76,10 +75,10 @@ class ConsoleClient(api : API) {
         }
     }
 
-    private fun executeCommand(cmd : String) : Boolean {
+    private fun executeCommand(cmd: String): Boolean {
         val args = cmd.split(' ')
-        var isSuccess = false;
-        when(args[0]) {
+        var isSuccess = false
+        when (args[0]) {
             ":send" -> {
                 if (args.size >= 3) {
                     val message = args.filterIndexed { index, _ -> index >= 2 }
@@ -115,9 +114,15 @@ class ConsoleClient(api : API) {
                     val availableChats = client.findAvailableChats()
                     for (chat in availableChats) {
                         if (chat is PersonalChat) {
-                            println(chat.person1.toString() + " " + chat.person2.toString())
+                            val person1 = client.findUserById(chat.person1)
+                            val person2 = client.findUserById(chat.person2)
+                            if (client.self().id == person1.id) {
+                                println(person2.username)
+                            } else {
+                                println(person1.username)
+                            }
                         } else if (chat is GroupChat) {
-                            println(chat.title)
+                            println("${chat.title} (group)")
                         }
                     }
                     isSuccess = true
@@ -133,7 +138,10 @@ class ConsoleClient(api : API) {
                     try {
                         val chatHistory = client.getGroupChatHistory(chatTitle)
                         for (message in chatHistory) {
-                            println(message)
+                            when (message) {
+                                is TextMessage -> println(formatTextMessage(message))
+                                else -> println(message)
+                            }
                         }
                         isSuccess = true
                     } catch (e: MessengerException) {
@@ -148,8 +156,8 @@ class ConsoleClient(api : API) {
                     val chatTitle = args[1]
                     val members = args.filterIndexed { index, _ -> index >= 2 }
                     try {
-                        val chat = client.createGroupChat(chatTitle, members)
-                        isSuccess = true;
+                        client.createGroupChat(chatTitle, members)
+                        isSuccess = true
                     } catch (e: MessengerException) {
                         println(e.message)
                     } catch (e: Exception) {
@@ -177,7 +185,10 @@ class ConsoleClient(api : API) {
                     try {
                         val history = client.getPersonalChatHistory(username)
                         for (message in history) {
-                            println(message)
+                            when (message) {
+                                is TextMessage -> println(formatTextMessage(message))
+                                else -> println(message)
+                            }
                         }
                         isSuccess = true
                     } catch (e: MessengerException) {
@@ -189,29 +200,44 @@ class ConsoleClient(api : API) {
             }
             ":help" -> {
                 commandsDescription.forEach {
-                    println("${it.key.first.plus(" ").
-                            plus(it.key.second.joinToString(separator = " ")).padEnd(50)} - ${it.value}")
+                    println("${it.key.first.plus(" ").plus(it.key.second.joinToString(separator = " ")).padEnd(50)} - ${it.value}")
                 }
-                isSuccess = true;
+                isSuccess = true
             }
             ":exit" -> {
-                return false;
+                return false
             }
             else -> isSuccess = false
         }
         if (!isSuccess)
             println("Incorrect command, try again...")
-        return true;
+        return true
     }
 
-    fun writeCommand() : Boolean {
+    fun writeCommand(): Boolean {
         print("> ")
         val cmd = readLine()
         if (cmd == null || cmd.toLowerCase() == "quit")
-            return false;
+            return false
         return executeCommand(cmd)
     }
 
     fun endSession() {
+    }
+
+    private fun formatTextMessage(message: TextMessage): String {
+        return StringBuilder()
+                .append("${message.date}| ")
+                .apply {
+                    if (message.sender != null) {
+                        try {
+                            val sender = client.findUserById(message.sender)
+                            this.append("${sender.username}: ")
+                        } catch (e: Exception) {
+                            this.append("<deleted>: ")
+                        }
+                    }
+                }
+                .append(message.content).toString()
     }
 }
