@@ -1,6 +1,6 @@
 package snailmail.core.api
 
-object APIMethodMapping {
+object APITransportMapping {
     object Auth {
         const val authenticate = "auth.authenticate"
         const val register = "auth.register"
@@ -20,5 +20,10 @@ object APIMethodMapping {
     object User {
         const val searchByUsername = "users.searchByUsername"
         const val getUserById = "users.getUserById"
+    }
+
+    object Convention {
+        const val method = "method"
+        const val errorType = "error-type"
     }
 }
