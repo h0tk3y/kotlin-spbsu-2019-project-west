@@ -1,13 +1,10 @@
 package snailmail.server
 
+
 import snailmail.core.*
 import snailmail.core.api.*
 import java.util.*
 import kotlin.collections.HashMap
-
-class InvalidTokenException : Exception("Invalid Token")
-class InvalidChatId : Exception("Invalid chat id")
-class UserIsNotMemberException : Exception("User is not a member of this chat")
 
 class Server : API {
     private var userCredentials = HashMap<String, String>()
