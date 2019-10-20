@@ -41,6 +41,9 @@ dependencies {
     compile "io.ktor:ktor-client-okhttp:$ktor_version"
 
     compile "com.beust:klaxon:5.0.13"
+
+    // https://mvnrepository.com/artifact/com.googlecode.lanterna/lanterna
+    compile "com.googlecode.lanterna:lanterna:3.0.0"
 }
 
 jar {
