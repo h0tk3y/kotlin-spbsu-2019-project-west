@@ -1,13 +1,18 @@
 package snailmail
 
-import snailmail.server.Server
-import snailmail.server.InvalidTokenException
-import snailmail.server.UserIsNotMemberException
-import snailmail.core.api.*
+
+import snailmail.core.InvalidTokenException
 import snailmail.core.TextMessage
 import snailmail.core.UserCredentials
-
-import kotlin.test.*
+import snailmail.core.UserIsNotMemberException
+import snailmail.core.api.AuthRegisterFailed
+import snailmail.core.api.AuthSuccessful
+import snailmail.core.api.AuthWrongCredentials
+import snailmail.server.Server
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 
 class ServerTest {
     @Test
@@ -22,7 +27,7 @@ class ServerTest {
         val server = Server()
 
         assert(server.register(UserCredentials("user", "qwerty")) is AuthSuccessful)
-        assert(server.register( UserCredentials("user", "password")) is AuthRegisterFailed)
+        assert(server.register(UserCredentials("user", "password")) is AuthRegisterFailed)
     }
 
     @Test
@@ -181,7 +186,7 @@ class ServerTest {
         val correctChatMessages = listOf("h e l l o", "#__#", "", "")
 
         assertEquals(correctChatMessages,
-                     server.getChatMessages("A", chat.id).getMessages().map { (it as TextMessage).content })
+                server.getChatMessages("A", chat.id).getMessages().map { (it as TextMessage).content })
     }
 
     @Test
@@ -195,7 +200,7 @@ class ServerTest {
 
         assertEquals(1, server.getChatMessages("user", chat.id).getMessages().size)
         assertEquals("_____",
-                     (server.getChatMessages("user", chat.id).getMessages().first() as TextMessage).content)
+                (server.getChatMessages("user", chat.id).getMessages().first() as TextMessage).content)
     }
 
     @Test
@@ -208,8 +213,8 @@ class ServerTest {
         server.register(UserCredentials("D", "ddddd"))
 
         val members = listOf(server.searchByUsername("A", "B")!!.id,
-                             server.searchByUsername("A", "C")!!.id,
-                             server.searchByUsername("A", "D")!!.id)
+                server.searchByUsername("A", "C")!!.id,
+                server.searchByUsername("A", "D")!!.id)
 
         val groupChat = server.createGroupChat("A", "", members)
 
@@ -244,8 +249,8 @@ class ServerTest {
         val chatWithD = server.getPersonalChatWith("A", server.searchByUsername("A", "D")!!.id)
 
         val members = listOf(server.searchByUsername("A", "B")!!.id,
-            server.searchByUsername("A", "C")!!.id,
-            server.searchByUsername("A", "D")!!.id)
+                server.searchByUsername("A", "C")!!.id,
+                server.searchByUsername("A", "D")!!.id)
 
         val chatABCD = server.createGroupChat("A", "", members)
 
