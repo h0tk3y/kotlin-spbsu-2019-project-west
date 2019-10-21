@@ -14,6 +14,7 @@ import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.util.pipeline.PipelineContext
 import io.ktor.websocket.WebSockets
 import io.ktor.websocket.webSocket
 import snailmail.core.*
@@ -51,42 +52,6 @@ class WebsocketServer(private val api: API) {
     fun run(port: Int = 9999) {
         fun methodToURIPath(method: String) = "/api/" + method.replace('.', '/')
 
-        suspend fun safeProcessing(call: ApplicationCall, block: suspend () -> Unit) {
-            try {
-                block()
-            } catch (e: ProtocolErrorException) {
-                val error = ProtocolErrorException()
-                val res = klaxon.toJsonString(error)
-                call.respondText(res, status = HttpStatusCode.BadRequest, contentType = ContentType.Application.Json)
-            } catch (e: Throwable) {
-                val error = InternalServerErrorException("Something bad happened...")
-                val res = klaxon.toJsonString(error)
-                call.respondText(res, status = HttpStatusCode.InternalServerError, contentType = ContentType.Application.Json)
-            }
-        }
-
-        suspend fun authenticated(call: ApplicationCall, block: suspend (token: String) -> Unit) = safeProcessing(call) {
-            val token = call.request.queryParameters["token"] ?: throw InvalidTokenException()
-            block(token)
-        }
-
-        suspend fun handleHTTPRequest(call: ApplicationCall, req: ServerRequest) = safeProcessing(call) {
-            suspend fun <T> handleWithCode(code: HttpStatusCode, e: T) {
-                val res = klaxon.toJsonString(e)
-                call.respondText(res, status = code, contentType = ContentType.Application.Json)
-            }
-
-            try {
-                handleWithCode(HttpStatusCode.OK, klaxon.toJsonString(processRequest(req)))
-            } catch (e: InvalidTokenException) {
-                handleWithCode(HttpStatusCode.Unauthorized, e)
-            } catch (e: InvalidChatId) {
-                handleWithCode(HttpStatusCode.NotFound, e)
-            } catch (e: UserIsNotMemberException) {
-                handleWithCode(HttpStatusCode.Forbidden, e)
-            }
-        }
-
         embeddedServer(Netty, port)
         {
             install(WebSockets)
@@ -118,74 +83,111 @@ class WebsocketServer(private val api: API) {
 
                 // HTTP REST API routes
                 get(methodToURIPath(APITransportMapping.Auth.authenticate)) {
-                    safeProcessing(call) {
+                    safeProcessing {
                         val username = call.request.queryParameters["username"]
                                 ?: throw ProtocolErrorException()
                         val password = call.request.queryParameters["password"]
                                 ?: throw ProtocolErrorException()
-                        handleHTTPRequest(call, AuthenticateRequest(username, password))
+                        handleHTTPRequest(AuthenticateRequest(username, password))
                     }
                 }
                 post(methodToURIPath(APITransportMapping.Auth.register)) {
-                    safeProcessing(call) {
+                    safeProcessing {
                         val username = call.request.queryParameters["username"]
                                 ?: throw ProtocolErrorException()
                         val password = call.request.queryParameters["password"]
                                 ?: throw ProtocolErrorException()
-                        handleHTTPRequest(call, RegisterRequest(username, password))
+                        handleHTTPRequest(RegisterRequest(username, password))
                     }
                 }
 
                 get(methodToURIPath(APITransportMapping.Chat.getAvailableChats)) {
-                    authenticated(call) { token ->
-                        handleHTTPRequest(call, GetAvailableChatsRequest(token))
+                    authenticated { token ->
+                        handleHTTPRequest(GetAvailableChatsRequest(token))
                     }
                 }
                 get(methodToURIPath(APITransportMapping.Chat.getPersonalChatWith)) {
-                    authenticated(call) { token ->
+                    authenticated { token ->
                         val user = UUID.fromString(call.request.queryParameters["user"]
                                 ?: throw ProtocolErrorException())
-                        handleHTTPRequest(call, GetPersonalChatWithRequest(token, user))
+                        handleHTTPRequest(GetPersonalChatWithRequest(token, user))
                     }
                 }
                 post(methodToURIPath(APITransportMapping.Chat.createGroupChat)) {
-                    authenticated(call) { token ->
+                    authenticated { token ->
                         val title = call.request.queryParameters["title"] ?: throw ProtocolErrorException()
                         val invitedMembers = call.request.queryParameters.getAll("invite")?.map { UUID.fromString(it) }
                                 ?: listOf()
-                        handleHTTPRequest(call, CreateGroupChatRequest(token, title, invitedMembers))
+                        handleHTTPRequest(CreateGroupChatRequest(token, title, invitedMembers))
                     }
                 }
 
                 get(methodToURIPath(APITransportMapping.Message.getChatMessages)) {
-                    authenticated(call) { token ->
+                    authenticated { token ->
                         val chat = UUID.fromString(call.request.queryParameters["chat"]
                                 ?: throw ProtocolErrorException())
-                        handleHTTPRequest(call, GetChatMessagesRequest(token, chat))
+                        handleHTTPRequest(GetChatMessagesRequest(token, chat))
                     }
                 }
                 post(methodToURIPath(APITransportMapping.Message.sendTextMessage)) {
-                    authenticated(call) { token ->
+                    authenticated { token ->
                         val chat = UUID.fromString(call.request.queryParameters["chat"]
                                 ?: throw ProtocolErrorException())
                         val text = call.request.queryParameters["text"] ?: throw ProtocolErrorException()
-                        handleHTTPRequest(call, SendTextMessageRequest(token, text, chat))
+                        handleHTTPRequest(SendTextMessageRequest(token, text, chat))
                     }
                 }
 
                 get(methodToURIPath(APITransportMapping.User.getUserById)) {
-                    authenticated(call) { token ->
+                    authenticated { token ->
                         val id = UUID.fromString(call.request.queryParameters["id"] ?: throw ProtocolErrorException())
-                        handleHTTPRequest(call, GetUserByIdRequest(token, id))
+                        handleHTTPRequest(GetUserByIdRequest(token, id))
                     }
                 }
                 get(methodToURIPath(APITransportMapping.User.searchByUsername)) {
-                    authenticated(call) { token ->
+                    authenticated { token ->
                         val username = call.request.queryParameters["username"] ?: throw ProtocolErrorException()
-                        handleHTTPRequest(call, SearchByUsernameRequest(token, username))
+                        handleHTTPRequest(SearchByUsernameRequest(token, username))
                     }
                 }
             }
         }.start(wait = true)
     }
+
+    private suspend fun PipelineContext<Unit, ApplicationCall>.safeProcessing(block: suspend PipelineContext<Unit,ApplicationCall>.() -> Unit) {
+        try {
+            block()
+        } catch (e: ProtocolErrorException) {
+            val error = ProtocolErrorException()
+            val res = klaxon.toJsonString(error)
+            this.call.respondText(res, status = HttpStatusCode.BadRequest, contentType = ContentType.Application.Json)
+        } catch (e: Throwable) {
+            val error = InternalServerErrorException("Something bad happened...")
+            val res = klaxon.toJsonString(error)
+            call.respondText(res, status = HttpStatusCode.InternalServerError, contentType = ContentType.Application.Json)
+        }
+    }
+
+    private suspend fun PipelineContext<Unit, ApplicationCall>.authenticated(block: suspend PipelineContext<Unit,ApplicationCall>.(token: String) -> Unit) = safeProcessing {
+        val token = call.request.queryParameters["token"] ?: throw InvalidTokenException()
+        block(token)
+    }
+
+    private suspend fun <T> PipelineContext<Unit, ApplicationCall>.handleWithCode(code: HttpStatusCode, e: T) {
+        val res = klaxon.toJsonString(e)
+        call.respondText(res, status = code, contentType = ContentType.Application.Json)
+    }
+
+    private suspend fun PipelineContext<Unit, ApplicationCall>.handleHTTPRequest(req: ServerRequest) {
+        try {
+            handleWithCode(HttpStatusCode.OK, klaxon.toJsonString(processRequest(req)))
+        } catch (e: InvalidTokenException) {
+            handleWithCode(HttpStatusCode.Unauthorized, e)
+        } catch (e: InvalidChatId) {
+            handleWithCode(HttpStatusCode.NotFound, e)
+        } catch (e: UserIsNotMemberException) {
+            handleWithCode(HttpStatusCode.Forbidden, e)
+        }
+    }
 }
+
