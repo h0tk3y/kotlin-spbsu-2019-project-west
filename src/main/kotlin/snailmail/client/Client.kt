@@ -15,10 +15,7 @@ class Client(private val api: API) {
             token ?: throw NotAuthenticatedException("Token doesn't exist")
 
     fun self(): User {
-        val username = username
-        if (username == null)
-            throw NotAuthenticatedException("You must login first")
-        else return findUser(username)
+        return findUser(username ?: throw NotAuthenticatedException("You must login first"))
     }
 
     fun findUser(username: String): User {
