@@ -20,9 +20,7 @@ class LanternaClient(api: API) {
     fun run() {
         screen.startScreen()
 
-        val loginActivity = LoginActivity(this)
-        loginActivity.setup()
-        loginActivity.run()
+        transition(LoginActivity(this))
     }
 
     fun transition(activity: Activity) {

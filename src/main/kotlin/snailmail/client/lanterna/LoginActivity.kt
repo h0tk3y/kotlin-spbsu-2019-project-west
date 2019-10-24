@@ -80,7 +80,7 @@ class LoginActivity(parent: LanternaClient) : Activity(parent) {
         panel.addComponent(buttonAuthenticate)
         panel.addComponent(buttonRegister)
 
-        window.setHints(listOf(Window.Hint.FULL_SCREEN, Window.Hint.CENTERED))
+        window.setHints(listOf(Window.Hint.CENTERED))
         window.component = panel
     }
 

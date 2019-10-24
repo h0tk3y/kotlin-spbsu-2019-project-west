@@ -43,7 +43,7 @@ dependencies {
     compile "com.beust:klaxon:5.0.13"
 
     // https://mvnrepository.com/artifact/com.googlecode.lanterna/lanterna
-    compile "com.googlecode.lanterna:lanterna:3.0.0"
+    compile "com.googlecode.lanterna:lanterna:3.0.1"
 }
 
 jar {
@@ -81,6 +81,20 @@ task clientJar(type: Jar, dependsOn: classes) {
 
     manifest {
         attributes 'Main-Class': 'snailmail.standalone.client.StandaloneClientKt'
+    }
+    with jar
+}
+
+
+task lanternaClientJar(type: Jar, dependsOn: classes) {
+    archiveFileName = 'lanternaClient.jar'
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    exclude("**/server/**")
+
+    manifest {
+        attributes 'Main-Class': 'snailmail.standalone.client.LanternaClientKt'
     }
     with jar
 }
