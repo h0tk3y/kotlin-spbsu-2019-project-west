@@ -11,15 +11,35 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class ClientTest {
-    /*
+    
     @Test
     fun `successful reg`() {
         val server = Server()
         val user = Client(server)
 
-        assert(user.register(UserCredentials("user", "12345")))
+        user.register(UserCredentials("user", "12345")) // shouldn't throw exceptions
     }
+    
+    @Test
+    fun `successful reg and auth`() {
+        val server = Server()
+        val user = Client(server)
 
+        user.register(UserCredentials("user", "abacaba")) // shouldn't throw exceptions
+        user.authenticate(UserCredentials("user", "abacaba")) // shouldn't throw exceptions
+    }
+    
+    @Test
+    fun `try to auth from another client`() {
+        val server = Server()
+        val user = Client(server)
+        val userAnotherClient = Client(server)
+
+        user.register(UserCredentials("user", "abacaba")) // shouldn't throw exceptions
+        userAnotherClient.authenticate(UserCredentials("user", "abacaba")) // shouldn't throw exceptions
+    }
+    
+    /*
     @Test
     fun `trying to reg twice with the same username`() {
         val server = Server()
@@ -48,25 +68,6 @@ class ClientTest {
     }
 
     @Test
-    fun `successful reg and auth`() {
-        val server = Server()
-        val user = Client(server)
-
-        assert(user.register(UserCredentials("user", "abacaba")))
-        assert(user.authenticate(UserCredentials("user", "abacaba")))
-    }
-
-    @Test
-    fun `try to auth from another client`() {
-        val server = Server()
-        val user = Client(server)
-        val userAnotherClient = Client(server)
-
-        assert(user.register(UserCredentials("user", "abacaba")))
-        assert(userAnotherClient.authenticate(UserCredentials("user", "abacaba")))
-    }
-
-    @Test
     fun `typo in password`() {
         val server = Server()
         val user = Client(server)
@@ -83,7 +84,7 @@ class ClientTest {
         assert(user.register(UserCredentials("user", "abacaba")))
         assert(!user.authenticate(UserCredentials("usir", "abacaba")))
     }
-     */
+    */
 
     @Test
     fun `finding yourself`() {
