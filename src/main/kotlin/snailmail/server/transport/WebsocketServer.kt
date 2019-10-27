@@ -183,7 +183,7 @@ class WebsocketServer(private val api: API) {
             handleWithCode(HttpStatusCode.OK, klaxon.toJsonString(processRequest(req)))
         } catch (e: InvalidTokenException) {
             handleWithCode(HttpStatusCode.Unauthorized, e)
-        } catch (e: InvalidChatId) {
+        } catch (e: InvalidChatIdException) {
             handleWithCode(HttpStatusCode.NotFound, e)
         } catch (e: UserIsNotMemberException) {
             handleWithCode(HttpStatusCode.Forbidden, e)

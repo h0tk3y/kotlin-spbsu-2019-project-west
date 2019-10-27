@@ -3,14 +3,14 @@ package snailmail.core
 import com.beust.klaxon.TypeAdapter
 import com.beust.klaxon.TypeFor
 import snailmail.core.api.APITransportMapping
-import snailmail.core.api.AuthenticationResult
+import snailmail.core.api.AuthToken
 import kotlin.reflect.KClass
 
 @TypeFor(field = APITransportMapping.Convention.method, adapter = ServerResponseAdapter::class)
 sealed class ServerResponse(val method: String)
 
-data class AuthenticateResponse(val result: AuthenticationResult) : ServerResponse(APITransportMapping.Auth.authenticate)
-data class RegisterResponse(val result: AuthenticationResult) : ServerResponse(APITransportMapping.Auth.register)
+data class AuthenticateResponse(val result: AuthToken) : ServerResponse(APITransportMapping.Auth.authenticate)
+data class RegisterResponse(val result: AuthToken) : ServerResponse(APITransportMapping.Auth.register)
 
 data class GetAvailableChatsResponse(val chats: List<Chat>) : ServerResponse(APITransportMapping.Chat.getAvailableChats)
 data class GetPersonalChatWithResponse(val chat: PersonalChat) : ServerResponse(APITransportMapping.Chat.getPersonalChatWith)

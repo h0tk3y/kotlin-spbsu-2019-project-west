@@ -1,13 +1,7 @@
 package snailmail
 
 
-import snailmail.core.InvalidTokenException
-import snailmail.core.TextMessage
-import snailmail.core.UserCredentials
-import snailmail.core.UserIsNotMemberException
-import snailmail.core.api.AuthRegisterFailed
-import snailmail.core.api.AuthSuccessful
-import snailmail.core.api.AuthWrongCredentials
+import snailmail.core.*
 import snailmail.server.Server
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,22 +13,22 @@ class ServerTest {
     fun `successful reg`() {
         val server = Server()
 
-        assert(server.register(UserCredentials("user", "qwerty")) is AuthSuccessful)
+        assertEquals("user", server.register(UserCredentials("user", "qwerty")))
     }
 
     @Test
     fun `trying to reg twice with the same username`() {
         val server = Server()
 
-        assert(server.register(UserCredentials("user", "qwerty")) is AuthSuccessful)
-        assert(server.register(UserCredentials("user", "password")) is AuthRegisterFailed)
+        assertEquals("user", server.register(UserCredentials("user", "qwerty")))
+        assertFailsWith<UnavailableUsernameException> { server.register(UserCredentials("user", "password")) }
     }
 
     @Test
     fun `unregistered user tries to auth`() {
         val server = Server()
 
-        assert(server.authenticate(UserCredentials("user", "qwerty")) is AuthWrongCredentials)
+        assertFailsWith<WrongCredentialsException> { server.authenticate(UserCredentials("user", "password")) }
     }
 
     @Test
@@ -42,8 +36,8 @@ class ServerTest {
         val server = Server()
         val userCredentials = UserCredentials("user", "abacaba")
 
-        assert(server.register(userCredentials) is AuthSuccessful)
-        assert(server.authenticate(userCredentials) is AuthSuccessful)
+        assertEquals("user", server.register(userCredentials))
+        assertEquals("user", server.authenticate(userCredentials))
     }
 
     @Test

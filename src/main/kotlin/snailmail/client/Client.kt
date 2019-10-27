@@ -2,9 +2,7 @@ package snailmail.client
 
 import snailmail.core.*
 import snailmail.core.api.API
-import snailmail.core.api.AuthSuccessful
 import snailmail.core.api.AuthToken
-import snailmail.core.api.AuthenticationResult
 import java.util.*
 
 class Client(private val api: API) {
@@ -76,20 +74,17 @@ class Client(private val api: API) {
         return api.createGroupChat(authToken, chatTitle, invitedMembers)
     }
 
-    fun authenticate(userCredentials: UserCredentials): Boolean {
+    fun authenticate(userCredentials: UserCredentials) {
         return processAuthentication(api.authenticate(userCredentials), userCredentials.username)
     }
 
-    fun register(userCredentials: UserCredentials): Boolean {
+    fun register(userCredentials: UserCredentials) {
         return processAuthentication(api.register(userCredentials), userCredentials.username)
     }
 
-    private fun processAuthentication(authResult: AuthenticationResult, username: String): Boolean {
-        if (authResult is AuthSuccessful) {
-            token = authResult.token
-            this.username = username
-        }
-        return authResult.successful
+    private fun processAuthentication(authToken: AuthToken, username: String) {
+        token = authToken
+        this.username = username
     }
 }
 
