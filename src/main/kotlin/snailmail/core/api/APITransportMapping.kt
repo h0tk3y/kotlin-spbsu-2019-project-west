@@ -1,25 +1,27 @@
 package snailmail.core.api
 
 object APITransportMapping {
+    data class Mapping(val method: String, val REST: String)
+
     object Auth {
-        const val authenticate = "auth.authenticate"
-        const val register = "auth.register"
+        val authenticate = Mapping("auth.authenticate", "/auth/{username}/{password}/" /*GET*/)
+        val register = Mapping("auth.register", "/auth/{username}/{password}/" /*POST*/)
     }
 
     object Chat {
-        const val getAvailableChats = "chats.getAvailableChats"
-        const val getPersonalChatWith = "chats.getPersonalChatWith"
-        const val createGroupChat = "chats.createGroupChat"
+        val getAvailableChats = Mapping("chats.getAvailableChats", "/{authToken}/chats/" /*GET*/)
+        val getPersonalChatWith = Mapping("chats.getPersonalChatWith", "/{authToken}/chats/personal/{userId}/" /*GET*/)
+        val createGroupChat = Mapping("chats.createGroupChat", "/{authToken}/chats/group/{title}/{invitedMembers...}/" /*POST*/)
     }
 
     object Message {
-        const val getChatMessages = "messages.getChatMessages"
-        const val sendTextMessage = "messages.sendTextMessage"
+        val getChatMessages = Mapping("messages.getChatMessages", "/{authToken}/messages/{chatId}/" /*GET*/)
+        val sendTextMessage = Mapping("messages.sendTextMessage", "/{authToken}/messages/{chatId}/" /*POST*/)
     }
 
     object User {
-        const val searchByUsername = "users.searchByUsername"
-        const val getUserById = "users.getUserById"
+        val searchByUsername = Mapping("users.searchByUsername", "/{authToken}/users/{username}/" /*GET*/)
+        val getUserById = Mapping("users.getUserById", "/{authToken}/users/id/{userId}/" /*GET*/)
     }
 
     object Convention {
