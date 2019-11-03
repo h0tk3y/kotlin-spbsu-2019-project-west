@@ -2,7 +2,7 @@ package snailmail.standalone.client
 
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import snailmail.client.ConsoleClient
+import snailmail.client.lanterna.LanternaClient
 import snailmail.client.transport.WebsocketClient
 
 fun main(args: Array<String>) {
@@ -25,8 +25,5 @@ fun main(args: Array<String>) {
         api.run()
     }
 
-    val consoleClient = ConsoleClient(api)
-    consoleClient.startSession()
-    while (consoleClient.writeCommand());
-    consoleClient.endSession()
+    LanternaClient(api).run()
 }
