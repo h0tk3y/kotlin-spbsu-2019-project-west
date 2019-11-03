@@ -3,6 +3,7 @@ package snailmail.client.lanterna
 import com.googlecode.lanterna.gui2.*
 import com.googlecode.lanterna.gui2.dialogs.MessageDialog
 import snailmail.core.UserCredentials
+import java.awt.GridLayout
 import java.util.regex.Pattern
 
 class LoginActivity(parent: LanternaClient) : Activity(parent) {
@@ -46,11 +47,8 @@ class LoginActivity(parent: LanternaClient) : Activity(parent) {
         buttonAuthenticate.addListener { button ->
             if (button == null) throw IllegalArgumentException()
             try {
-                if (client.authenticate(UserCredentials(inputUsername.text, inputPassword.text))) {
-                    onAuth()
-                } else {
-                    MessageDialog.showMessageDialog(gui, "Authentication error!", "Incorrect credentials!")
-                }
+                client.authenticate(UserCredentials(inputUsername.text, inputPassword.text))
+                onAuth()
             } catch (e: Exception) {
                 MessageDialog.showMessageDialog(gui, "Authentication error!", e.message)
             }
@@ -59,11 +57,8 @@ class LoginActivity(parent: LanternaClient) : Activity(parent) {
         buttonRegister.addListener { button ->
             if (button == null) throw IllegalArgumentException()
             try {
-                if (client.register(UserCredentials(inputUsername.text, inputPassword.text))) {
-                    onAuth()
-                } else {
-                    MessageDialog.showMessageDialog(gui, "Register error!", "Username is already taken!")
-                }
+                client.register(UserCredentials(inputUsername.text, inputPassword.text))
+                onAuth()
             } catch (e: Exception) {
                 MessageDialog.showMessageDialog(gui, "Register error!", e.message)
             }

@@ -19,20 +19,22 @@ class Server : API {
         return (userIdByToken[token] != null)
     }
 
-    override fun authenticate(credentials: UserCredentials): AuthenticationResult {
+    override fun authenticate(credentials: UserCredentials): AuthToken {
         val username = credentials.username
         val password = credentials.password
-        if (userCredentials.contains(username) && userCredentials[username] == password) {
+        if (!userCredentials.contains(username) || userCredentials[username] != password)
+            throw WrongCredentialsException()
+        else {
             val token = username
             userIdByToken[token] = userByUsername[username]?.id
                     ?: throw InternalServerErrorException("Successful authentication, but user doesn't exist.")
-            return AuthSuccessful(token)
+            return token
         }
-        return AuthWrongCredentials()
     }
 
-    override fun register(credentials: UserCredentials): AuthenticationResult {
-        if (userCredentials.contains(credentials.username)) return AuthRegisterFailed("")
+    override fun register(credentials: UserCredentials): AuthToken {
+        if (userCredentials.contains(credentials.username))
+            throw UnavailableUsernameException()
         val user = User(UUID.randomUUID(), credentials.username, credentials.username)
         userCredentials[credentials.username] = credentials.password
         userByUsername[credentials.username] = user
@@ -86,7 +88,7 @@ class Server : API {
             throw InvalidTokenException()
         val currentChat = chatByChatId[chat]
         if (currentChat == null)
-            throw InvalidChatId()
+            throw InvalidChatIdException()
         else if (!currentChat.hasMember(
                         userIdByToken[token]
                                 ?: throw InternalServerErrorException("Token is valid, but user doesn't exist.")

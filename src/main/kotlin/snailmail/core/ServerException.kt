@@ -9,11 +9,19 @@ abstract class ServerException(message: String) : Exception(message) {
     abstract fun errorType(): String
 }
 
-class InvalidTokenException : ServerException("Invalid Token") {
+class UnavailableUsernameException : ServerException("Unavailable username") {
+    override fun errorType() = "unavailable username"
+}
+
+class WrongCredentialsException : ServerException("Wrong credentials") {
+    override fun errorType() = "wrong credentials"
+}
+
+class InvalidTokenException : ServerException("Invalid token") {
     override fun errorType() = "invalid token"
 }
 
-class InvalidChatId : ServerException("Invalid chat id") {
+class InvalidChatIdException : ServerException("Invalid chat id") {
     override fun errorType() = "invalid chat id"
 }
 
@@ -31,8 +39,10 @@ class InternalServerErrorException(message: String = "Something bad happened..."
 
 class ServerExceptionAdapter : TypeAdapter<ServerException> {
     override fun classFor(type: Any): KClass<out ServerException> = when (type as String) {
+        UnavailableUsernameException().errorType() -> UnavailableUsernameException::class
+        WrongCredentialsException().errorType() -> WrongCredentialsException::class
         InvalidTokenException().errorType() -> InvalidTokenException::class
-        InvalidChatId().errorType() -> InvalidChatId::class
+        InvalidChatIdException().errorType() -> InvalidChatIdException::class
         UserIsNotMemberException().errorType() -> UserIsNotMemberException::class
         ProtocolErrorException().errorType() -> ProtocolErrorException::class
         InternalServerErrorException().errorType() -> InternalServerErrorException::class
@@ -42,8 +52,10 @@ class ServerExceptionAdapter : TypeAdapter<ServerException> {
 
 class ServerExceptionConverter : Converter {
     override fun canConvert(cls: Class<*>) =
-            arrayOf(InvalidTokenException::class.java,
-                    InvalidChatId::class.java,
+            arrayOf(UnavailableUsernameException::class.java,
+                    WrongCredentialsException::class.java,
+                    InvalidTokenException::class.java,
+                    InvalidChatIdException::class.java,
                     UserIsNotMemberException::class.java,
                     ProtocolErrorException::class.java,
                     InternalServerErrorException::class.java).contains(cls)
@@ -55,8 +67,10 @@ class ServerExceptionConverter : Converter {
         val message = (jv.obj?.get("message") as? String)
                 ?: throw java.lang.IllegalArgumentException("Malformed Server Exception")
         return when (errorType) {
+            UnavailableUsernameException().errorType() -> UnavailableUsernameException()
+            WrongCredentialsException().errorType() -> WrongCredentialsException()
             InvalidTokenException().errorType() -> InvalidTokenException()
-            InvalidChatId().errorType() -> InvalidChatId()
+            InvalidChatIdException().errorType() -> InvalidChatIdException()
             UserIsNotMemberException().errorType() -> UserIsNotMemberException()
             ProtocolErrorException().errorType() -> ProtocolErrorException(message)
             InternalServerErrorException().errorType() -> InternalServerErrorException(message)

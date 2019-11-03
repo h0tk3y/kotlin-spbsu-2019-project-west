@@ -43,11 +43,17 @@ class ConsoleClient(api: API) {
         while (true) {
             print("Do you have an account? (y/n) ")
             val answer = readLine()!!
+            var userCredentials = getUserCredentials()
+            var isSuccess = false
             if (answer == "y") {
-                var userCredentials = getUserCredentials()
                 while (true) {
-                    val authenticationResult = client.authenticate(userCredentials)
-                    if (authenticationResult) {
+                    try {
+                        client.authenticate(userCredentials)
+                        isSuccess = true
+                    } catch (e: Exception) {
+                        println(e.message)
+                    }
+                    if (isSuccess) {
                         break
                     } else {
                         println("Username or/and password are incorrect")
@@ -57,10 +63,14 @@ class ConsoleClient(api: API) {
                 println("Successful authentication! You can write commands!")
                 break
             } else if (answer == "n") {
-                var userCredentials = getUserCredentials()
                 while (true) {
-                    val authenticationResult = client.register(userCredentials)
-                    if (authenticationResult) {
+                    try {
+                        client.register(userCredentials)
+                        isSuccess = true
+                    } catch (e: Exception) {
+                        println(e.message)
+                    }
+                    if (isSuccess) {
                         break
                     } else {
                         println("Registration failed, try to change username")
