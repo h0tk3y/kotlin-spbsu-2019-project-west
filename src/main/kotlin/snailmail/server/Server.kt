@@ -42,18 +42,14 @@ class Server : API {
         return authenticate(credentials)
     }
 
-    override fun getAvailableChats(token: AuthToken): ChatRetriever {
+    override fun getAvailableChats(token: AuthToken): List<Chat> {
         if (!tokenIsValid(token))
             throw InvalidTokenException()
-        return object : ChatRetriever {
-            override fun getChats(): List<Chat> {
-                return this@Server.chats.filter {
-                    it.hasMember(
-                            userIdByToken[token]
-                                    ?: throw InternalServerErrorException("Token is valid, but user doesn't exist.")
-                    )
-                }
-            }
+        return this.chats.filter {
+            it.hasMember(
+                    userIdByToken[token]
+                            ?: throw InternalServerErrorException("Token is valid, but user doesn't exist.")
+            )
         }
     }
 
@@ -83,7 +79,7 @@ class Server : API {
         return res as PersonalChat
     }
 
-    override fun getChatMessages(token: AuthToken, chat: UUID): MessageRetriever {
+    override fun getChatMessages(token: AuthToken, chat: UUID): List<Message> {
         if (!tokenIsValid(token))
             throw InvalidTokenException()
         val currentChat = chatByChatId[chat]
@@ -95,16 +91,8 @@ class Server : API {
                 )
         )
             throw UserIsNotMemberException()
-        return object : MessageRetriever {
-            override fun getMessages(): List<Message> {
-                return messagesByChatId[chat]
-                        ?: throw InternalServerErrorException("Сhat exists, but his history doesn't exist.")
-            }
-
-            override fun getMessagesSince(since: Date): List<Message> {
-                return getMessages().filter { it.date.after(since) }
-            }
-        }
+        return messagesByChatId[chat]
+                ?: throw InternalServerErrorException("Сhat exists, but his history doesn't exist.")
     }
 
     override fun sendTextMessage(token: AuthToken, text: String, chat: UUID): TextMessage {
