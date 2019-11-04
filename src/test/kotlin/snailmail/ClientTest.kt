@@ -157,11 +157,10 @@ class ClientTest {
     @Test
     fun `only one is available`() {
         val server = Server()
-        val user = Client(server)
-
-        user.register(UserCredentials("user", "abacaba"))
-
-        user.sendMessage("user", "=)")
+        val user = Client(server).apply {
+            register(UserCredentials("user", "abacaba"))
+            sendMessage("user", "=)")
+        }
 
         assertEquals(1, user.findAvailableChats().size)
     }
@@ -179,9 +178,12 @@ class ClientTest {
         userC.register(UserCredentials("C", "ccccc"))
         userD.register(UserCredentials("D", "ddddd"))
 
-        userA.sendMessage("B", "hello!!")
-        userA.sendMessage("C", "hello!!")
-        userA.sendMessage("D", "hello!!")
+        with(userA) {
+            sendMessage("B", "hello!!")
+            sendMessage("C", "hello!!")
+            sendMessage("D", "hello!!")
+        }
+
 
         assertEquals(3, userA.findAvailableChats().size)
     }
