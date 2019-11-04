@@ -11,7 +11,17 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class ClientTest {
-    
+    private fun generateTwoUsers(block: (userA: Client, userB: Client) -> Unit) {
+        val server = Server()
+        val userA = Client(server)
+        val userB = Client(server)
+
+        userA.register(UserCredentials("A", "aaaaa"))
+        userB.register(UserCredentials("B", "bbbbb"))
+
+        block(userA, userB)
+    }
+
     @Test
     fun `successful reg`() {
         val server = Server()
@@ -98,67 +108,41 @@ class ClientTest {
 
     @Test
     fun `A and B is looking for each other`() {
-        val server = Server()
-        val userA = Client(server)
-        val userB = Client(server)
-
-        userA.register(UserCredentials("A", "aaaaa"))
-        userB.register(UserCredentials("B", "bbbbb"))
-
-        assertEquals("B", userA.findUser("B").username)
-        assertEquals("A", userB.findUser("A").username)
+        generateTwoUsers { userA, userB ->
+            assertEquals("B", userA.findUser("B").username)
+            assertEquals("A", userB.findUser("A").username)
+        }
     }
 
     @Test
     fun `A sends a message to B`() {
-        val server = Server()
-        val userA = Client(server)
-        val userB = Client(server)
-
-        userA.register(UserCredentials("A", "aaaaa"))
-        userB.register(UserCredentials("B", "bbbbb"))
-
-        assertEquals("hello B", userA.sendMessage("B", "hello B").content)
+        generateTwoUsers { userA, _ ->
+            assertEquals("hello B", userA.sendMessage("B", "hello B").content)
+        }
     }
 
     @Test
     fun `sending empty message`() {
-        val server = Server()
-        val userA = Client(server)
-        val userB = Client(server)
-
-        userA.register(UserCredentials("A", "aaaaa"))
-        userB.register(UserCredentials("B", "bbbbb"))
-
-        assertEquals("", userA.sendMessage("B", "").content)
+        generateTwoUsers { userA, _ ->
+            assertEquals("", userA.sendMessage("B", "").content)
+        }
     }
 
     @Test
     fun `sending a pair of messages to each other`() {
-        val server = Server()
-        val userA = Client(server)
-        val userB = Client(server)
-
-        userA.register(UserCredentials("A", "aaaaa"))
-        userB.register(UserCredentials("B", "bbbbb"))
-
-        assertEquals("hello", userA.sendMessage("B", "hello").content)
-        assertEquals("bye", userB.sendMessage("A", "bye").content)
+        generateTwoUsers { userA, userB ->
+            assertEquals("hello", userA.sendMessage("B", "hello").content)
+            assertEquals("bye", userB.sendMessage("A", "bye").content)
+        }
     }
 
     @Test
     fun `single message in personal chat history`() {
-        val server = Server()
-        val userA = Client(server)
-        val userB = Client(server)
-
-        userA.register(UserCredentials("A", "aaaaa"))
-        userB.register(UserCredentials("B", "bbbbb"))
-
-        userA.sendMessage("B", "hello")
-
-        assertEquals(1, userB.getPersonalChatHistory("A").size)
-        assertEquals("hello", (userB.getPersonalChatHistory("B").first() as TextMessage).content)
+        generateTwoUsers { userA, userB ->
+            userA.sendMessage("B", "hello")
+            assertEquals(1, userB.getPersonalChatHistory("A").size)
+            assertEquals("hello", (userB.getPersonalChatHistory("B").first() as TextMessage).content)
+        }
     }
 
     @Test
@@ -173,11 +157,10 @@ class ClientTest {
     @Test
     fun `only one is available`() {
         val server = Server()
-        val user = Client(server)
-
-        user.register(UserCredentials("user", "abacaba"))
-
-        user.sendMessage("user", "=)")
+        val user = Client(server).apply {
+            register(UserCredentials("user", "abacaba"))
+            sendMessage("user", "=)")
+        }
 
         assertEquals(1, user.findAvailableChats().size)
     }
@@ -195,64 +178,52 @@ class ClientTest {
         userC.register(UserCredentials("C", "ccccc"))
         userD.register(UserCredentials("D", "ddddd"))
 
-        userA.sendMessage("B", "hello!!")
-        userA.sendMessage("C", "hello!!")
-        userA.sendMessage("D", "hello!!")
+        with(userA) {
+            sendMessage("B", "hello!!")
+            sendMessage("C", "hello!!")
+            sendMessage("D", "hello!!")
+        }
+
 
         assertEquals(3, userA.findAvailableChats().size)
     }
 
     @Test
     fun `empty history of personal chat`() {
-        val server = Server()
-        val userA = Client(server)
-        val userB = Client(server)
-
-        userA.register(UserCredentials("A", "aaaaa"))
-        userB.register(UserCredentials("B", "bbbbb"))
-
-        assert(userA.getPersonalChatHistory("B").isEmpty())
-        assert(userB.getPersonalChatHistory("A").isEmpty())
+        generateTwoUsers { userA, userB ->
+            assert(userA.getPersonalChatHistory("B").isEmpty())
+            assert(userB.getPersonalChatHistory("A").isEmpty())
+        }
     }
 
     @Test
     fun `nonempty history of personal chat`() {
-        val server = Server()
-        val userA = Client(server)
-        val userB = Client(server)
+        generateTwoUsers { userA, userB ->
+            userA.sendMessage("B", "aa))")
+            userB.sendMessage("A", "bb((")
+            userA.sendMessage("B", "a)")
+            userB.sendMessage("A", "b(")
+            userA.sendMessage("B", "aaaaaa)))")
 
-        userA.register(UserCredentials("A", "aaaaa"))
-        userB.register(UserCredentials("B", "bbbbb"))
-
-        userA.sendMessage("B", "aa))")
-        userB.sendMessage("A", "bb((")
-        userA.sendMessage("B", "a)")
-        userB.sendMessage("A", "b(")
-        userA.sendMessage("B", "aaaaaa)))")
-
-        val correctChatHistory = listOf("aa))", "bb((", "a)", "b(", "aaaaaa)))")
-        assertEquals(correctChatHistory, userA.getPersonalChatHistory("B").map { (it as TextMessage).content })
-        assertEquals(correctChatHistory, userB.getPersonalChatHistory("A").map { (it as TextMessage).content })
+            val correctChatHistory = listOf("aa))", "bb((", "a)", "b(", "aaaaaa)))")
+            assertEquals(correctChatHistory, userA.getPersonalChatHistory("B").map { (it as TextMessage).content })
+            assertEquals(correctChatHistory, userB.getPersonalChatHistory("A").map { (it as TextMessage).content })
+        }
     }
 
     @Test
     fun `mess mess messages in history of personal chat`() {
-        val server = Server()
-        val userA = Client(server)
-        val userB = Client(server)
+        generateTwoUsers { userA, userB ->
+            userA.sendMessage("B", "hel")
+            userA.sendMessage("B", "lo")
+            userA.sendMessage("B", ")))")
+            userB.sendMessage("A", "=__=")
+            userA.sendMessage("B", "x__x")
 
-        userA.register(UserCredentials("A", "aaaaa"))
-        userB.register(UserCredentials("B", "bbbbb"))
-
-        userA.sendMessage("B", "hel")
-        userA.sendMessage("B", "lo")
-        userA.sendMessage("B", ")))")
-        userB.sendMessage("A", "=__=")
-        userA.sendMessage("B", "x__x")
-
-        val correctChatHistory = listOf("hel", "lo", ")))", "=__=", "x__x")
-        assertEquals(correctChatHistory, userA.getPersonalChatHistory("B").map { (it as TextMessage).content })
-        assertEquals(correctChatHistory, userB.getPersonalChatHistory("A").map { (it as TextMessage).content })
+            val correctChatHistory = listOf("hel", "lo", ")))", "=__=", "x__x")
+            assertEquals(correctChatHistory, userA.getPersonalChatHistory("B").map { (it as TextMessage).content })
+            assertEquals(correctChatHistory, userB.getPersonalChatHistory("A").map { (it as TextMessage).content })
+        }
     }
 
     @Test
