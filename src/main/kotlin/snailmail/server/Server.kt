@@ -3,6 +3,7 @@ package snailmail.server
 
 import snailmail.core.*
 import snailmail.core.api.*
+import snailmail.server.jwt.JwtConfig
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -23,9 +24,9 @@ class Server : API {
         val username = credentials.username
         val password = credentials.password
         if (userCredentials.contains(username) && userCredentials[username] == password) {
-            val token = username
-            userIdByToken[token] = userByUsername[username]?.id
-                    ?: throw InternalServerErrorException("Successful authentication, but user doesn't exist.")
+            val user = userByUsername[username] ?: throw InternalServerErrorException("Successful authentication, but user doesn't exist.")
+            val token = JwtConfig.makeToken(user)
+            userIdByToken[token] = user.id
             return AuthSuccessful(token)
         }
         return AuthWrongCredentials()
