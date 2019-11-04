@@ -155,8 +155,8 @@ class ServerTest {
         generateServerWithTwoUsers {
             server ->
                 val chat = server.getPersonalChatWith("A", server.searchByUsername("A", "B")!!.id)
-            assert(server.getChatMessages("A", chat.id).isEmpty())
-            assert(server.getChatMessages("B", chat.id).isEmpty())
+                assert(server.getChatMessages("A", chat.id).isEmpty())
+                assert(server.getChatMessages("B", chat.id).isEmpty())
         }
     }
 
@@ -172,8 +172,8 @@ class ServerTest {
                     sendTextMessage("A", "", chat.id)
                 }
                 val correctChatMessages = listOf("h e l l o", "#__#", "", "")
-            assertEquals(correctChatMessages,
-                    server.getChatMessages("A", chat.id).map { (it as TextMessage).content })
+                assertEquals(correctChatMessages,
+                        server.getChatMessages("A", chat.id).map { (it as TextMessage).content })
         }
     }
 
@@ -229,7 +229,7 @@ class ServerTest {
                 }
                 val chatABCD = server.createGroupChat("A", "", members)
                 val correctAvailableChats = chats + chatABCD
-            assertEquals(correctAvailableChats, server.getAvailableChats("A"))
+                assertEquals(correctAvailableChats, server.getAvailableChats("A"))
         }
     }
 
