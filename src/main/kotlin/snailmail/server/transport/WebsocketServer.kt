@@ -8,6 +8,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
+import io.ktor.request.receiveText
 import io.ktor.response.respondText
 import io.ktor.routing.get
 import io.ktor.routing.post
@@ -50,7 +51,7 @@ class WebsocketServer(private val api: API) {
     }
 
     fun run(port: Int = 9999) {
-        fun methodToURIPath(method: String) = "/api/" + method.replace('.', '/')
+        fun RESTPath(path: String) = "/api/" + path.trimStart('/')
 
         embeddedServer(Netty, port)
         {
@@ -82,71 +83,72 @@ class WebsocketServer(private val api: API) {
                 }
 
                 // HTTP REST API routes
-                get(methodToURIPath(APITransportMapping.Auth.authenticate)) {
+
+                get(RESTPath(APITransportMapping.Auth.authenticate.REST)) {
                     safeProcessing {
-                        val username = call.request.queryParameters["username"]
+                        val username = call.parameters["username"]
                                 ?: throw ProtocolErrorException()
-                        val password = call.request.queryParameters["password"]
+                        val password = call.parameters["password"]
                                 ?: throw ProtocolErrorException()
                         handleHTTPRequest(AuthenticateRequest(username, password))
                     }
                 }
-                post(methodToURIPath(APITransportMapping.Auth.register)) {
+                post(RESTPath(APITransportMapping.Auth.register.REST)) {
                     safeProcessing {
-                        val username = call.request.queryParameters["username"]
+                        val username = call.parameters["username"]
                                 ?: throw ProtocolErrorException()
-                        val password = call.request.queryParameters["password"]
+                        val password = call.parameters["password"]
                                 ?: throw ProtocolErrorException()
                         handleHTTPRequest(RegisterRequest(username, password))
                     }
                 }
 
-                get(methodToURIPath(APITransportMapping.Chat.getAvailableChats)) {
+                get(RESTPath(APITransportMapping.Chat.getAvailableChats.REST)) {
                     authenticated { token ->
                         handleHTTPRequest(GetAvailableChatsRequest(token))
                     }
                 }
-                get(methodToURIPath(APITransportMapping.Chat.getPersonalChatWith)) {
+                get(RESTPath(APITransportMapping.Chat.getPersonalChatWith.REST)) {
                     authenticated { token ->
-                        val user = UUID.fromString(call.request.queryParameters["user"]
+                        val userId = UUID.fromString(call.parameters["userId"]
                                 ?: throw ProtocolErrorException())
-                        handleHTTPRequest(GetPersonalChatWithRequest(token, user))
+                        handleHTTPRequest(GetPersonalChatWithRequest(token, userId))
                     }
                 }
-                post(methodToURIPath(APITransportMapping.Chat.createGroupChat)) {
+                post(RESTPath(APITransportMapping.Chat.createGroupChat.REST)) {
                     authenticated { token ->
-                        val title = call.request.queryParameters["title"] ?: throw ProtocolErrorException()
-                        val invitedMembers = call.request.queryParameters.getAll("invite")?.map { UUID.fromString(it) }
+                        val title = call.parameters["title"] ?: throw ProtocolErrorException()
+                        val invitedMembers = call.parameters.getAll("invitedMembers")?.map { UUID.fromString(it) }
                                 ?: listOf()
                         handleHTTPRequest(CreateGroupChatRequest(token, title, invitedMembers))
                     }
                 }
 
-                get(methodToURIPath(APITransportMapping.Message.getChatMessages)) {
+                get(RESTPath(APITransportMapping.Message.getChatMessages.REST)) {
                     authenticated { token ->
-                        val chat = UUID.fromString(call.request.queryParameters["chat"]
+                        val chat = UUID.fromString(call.parameters["chatId"]
                                 ?: throw ProtocolErrorException())
                         handleHTTPRequest(GetChatMessagesRequest(token, chat))
                     }
                 }
-                post(methodToURIPath(APITransportMapping.Message.sendTextMessage)) {
+                post(RESTPath(APITransportMapping.Message.sendTextMessage.REST)) {
                     authenticated { token ->
-                        val chat = UUID.fromString(call.request.queryParameters["chat"]
+                        val chat = UUID.fromString(call.parameters["chatId"]
                                 ?: throw ProtocolErrorException())
-                        val text = call.request.queryParameters["text"] ?: throw ProtocolErrorException()
+                        val text = call.receiveText()
                         handleHTTPRequest(SendTextMessageRequest(token, text, chat))
                     }
                 }
 
-                get(methodToURIPath(APITransportMapping.User.getUserById)) {
+                get(RESTPath(APITransportMapping.User.getUserById.REST)) {
                     authenticated { token ->
-                        val id = UUID.fromString(call.request.queryParameters["id"] ?: throw ProtocolErrorException())
+                        val id = UUID.fromString(call.parameters["userId"] ?: throw ProtocolErrorException())
                         handleHTTPRequest(GetUserByIdRequest(token, id))
                     }
                 }
-                get(methodToURIPath(APITransportMapping.User.searchByUsername)) {
+                get(RESTPath(APITransportMapping.User.searchByUsername.REST)) {
                     authenticated { token ->
-                        val username = call.request.queryParameters["username"] ?: throw ProtocolErrorException()
+                        val username = call.parameters["username"] ?: throw ProtocolErrorException()
                         handleHTTPRequest(SearchByUsernameRequest(token, username))
                     }
                 }
@@ -169,7 +171,7 @@ class WebsocketServer(private val api: API) {
     }
 
     private suspend fun PipelineContext<Unit, ApplicationCall>.authenticated(block: suspend PipelineContext<Unit,ApplicationCall>.(token: String) -> Unit) = safeProcessing {
-        val token = call.request.queryParameters["token"] ?: throw InvalidTokenException()
+        val token = call.parameters["authToken"] ?: throw InvalidTokenException()
         block(token)
     }
 
@@ -183,7 +185,7 @@ class WebsocketServer(private val api: API) {
             handleWithCode(HttpStatusCode.OK, klaxon.toJsonString(processRequest(req)))
         } catch (e: InvalidTokenException) {
             handleWithCode(HttpStatusCode.Unauthorized, e)
-        } catch (e: InvalidChatId) {
+        } catch (e: InvalidChatIdException) {
             handleWithCode(HttpStatusCode.NotFound, e)
         } catch (e: UserIsNotMemberException) {
             handleWithCode(HttpStatusCode.Forbidden, e)

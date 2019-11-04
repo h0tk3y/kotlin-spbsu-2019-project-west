@@ -16,8 +16,8 @@ class ClientServerTest {
         val alice = Client(server)
         val bob = Client(server)
 
-        assert(alice.register(UserCredentials("alice", "alice123")))
-        assert(bob.register(UserCredentials("bob", "bob345")))
+        alice.register(UserCredentials("alice", "alice123"))
+        bob.register(UserCredentials("bob", "bob345"))
 
         assertEquals(emptyList(), alice.findAvailableChats())
         assertEquals(emptyList(), bob.findAvailableChats())
