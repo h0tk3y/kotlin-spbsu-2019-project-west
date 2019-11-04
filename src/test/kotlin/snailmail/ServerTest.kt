@@ -104,7 +104,7 @@ class ServerTest {
 
         server.register(UserCredentials("user", "abacaba"))
 
-        assert(server.getAvailableChats("user").getChats().isEmpty())
+        assert(server.getAvailableChats("user").isEmpty())
     }
 
     @Test
@@ -122,7 +122,7 @@ class ServerTest {
 
         val correctAvailableChats = listOf(chatWithB, chatWithC, chatWithD)
 
-        assertEquals(correctAvailableChats, server.getAvailableChats("A").getChats())
+        assertEquals(correctAvailableChats, server.getAvailableChats("A"))
     }
 
     @Test
@@ -159,8 +159,8 @@ class ServerTest {
 
         val chat = server.getPersonalChatWith("A", server.searchByUsername("A", "B")!!.id)
 
-        assert(server.getChatMessages("A", chat.id).getMessages().isEmpty())
-        assert(server.getChatMessages("B", chat.id).getMessages().isEmpty())
+        assert(server.getChatMessages("A", chat.id).isEmpty())
+        assert(server.getChatMessages("B", chat.id).isEmpty())
     }
 
     @Test
@@ -180,7 +180,7 @@ class ServerTest {
         val correctChatMessages = listOf("h e l l o", "#__#", "", "")
 
         assertEquals(correctChatMessages,
-                server.getChatMessages("A", chat.id).getMessages().map { (it as TextMessage).content })
+                server.getChatMessages("A", chat.id).map { (it as TextMessage).content })
     }
 
     @Test
@@ -192,9 +192,9 @@ class ServerTest {
         val chat = server.getPersonalChatWith("user", server.searchByUsername("user", "user")!!.id)
         server.sendTextMessage("user", "_____", chat.id)
 
-        assertEquals(1, server.getChatMessages("user", chat.id).getMessages().size)
+        assertEquals(1, server.getChatMessages("user", chat.id).size)
         assertEquals("_____",
-                (server.getChatMessages("user", chat.id).getMessages().first() as TextMessage).content)
+                (server.getChatMessages("user", chat.id).first() as TextMessage).content)
     }
 
     @Test
@@ -250,7 +250,7 @@ class ServerTest {
 
         val correctAvailableChats = listOf(chatWithB, chatWithC, chatWithD, chatABCD)
 
-        assertEquals(correctAvailableChats, server.getAvailableChats("A").getChats())
+        assertEquals(correctAvailableChats, server.getAvailableChats("A"))
     }
 
     @Test

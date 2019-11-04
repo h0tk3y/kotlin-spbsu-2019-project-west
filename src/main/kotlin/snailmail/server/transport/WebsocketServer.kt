@@ -35,13 +35,13 @@ class WebsocketServer(private val api: API) {
         is RegisterRequest ->
             RegisterResponse(api.register(UserCredentials(req.username, req.password)))
         is GetAvailableChatsRequest ->
-            GetAvailableChatsResponse(api.getAvailableChats(req.token).getChats())
+            GetAvailableChatsResponse(api.getAvailableChats(req.token))
         is GetPersonalChatWithRequest ->
             GetPersonalChatWithResponse(api.getPersonalChatWith(req.token, req.user))
         is CreateGroupChatRequest ->
             CreateGroupChatResponse(api.createGroupChat(req.token, req.title, req.invitedMembers))
         is GetChatMessagesRequest ->
-            GetChatMessagesResponse(api.getChatMessages(req.token, req.chat).getMessages())
+            GetChatMessagesResponse(api.getChatMessages(req.token, req.chat))
         is SendTextMessageRequest ->
             SendTextMessageResponse(api.sendTextMessage(req.token, req.text, req.chat))
         is SearchByUsernameRequest ->
