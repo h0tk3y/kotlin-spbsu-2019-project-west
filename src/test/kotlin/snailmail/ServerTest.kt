@@ -114,7 +114,7 @@ class ServerTest {
 
         server.register(UserCredentials("user", "abacaba"))
 
-        assert(server.getAvailableChats("user").getChats().isEmpty())
+        assert(server.getAvailableChats("user").isEmpty())
     }
 
     @Test
@@ -186,9 +186,9 @@ class ServerTest {
         val chat = server.getPersonalChatWith("user", server.searchByUsername("user", "user")!!.id)
         server.sendTextMessage("user", "_____", chat.id)
 
-        assertEquals(1, server.getChatMessages("user", chat.id).getMessages().size)
+        assertEquals(1, server.getChatMessages("user", chat.id).size)
         assertEquals("_____",
-                (server.getChatMessages("user", chat.id).getMessages().first() as TextMessage).content)
+                (server.getChatMessages("user", chat.id).first() as TextMessage).content)
     }
 
     @Test

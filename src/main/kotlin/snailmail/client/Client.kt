@@ -41,7 +41,7 @@ class Client(private val api: API) {
 
     fun findAvailableChats(): List<Chat> {
         val authToken = acquireToken()
-        return api.getAvailableChats(authToken).getChats()
+        return api.getAvailableChats(authToken)
     }
 
     private fun findPersonalChatWith(username: String): PersonalChat {
@@ -53,19 +53,19 @@ class Client(private val api: API) {
     fun getPersonalChatHistory(username: String): List<Message> {
         val authToken = acquireToken()
         val chat = findPersonalChatWith(username)
-        return api.getChatMessages(authToken, chat.id).getMessages()
+        return api.getChatMessages(authToken, chat.id)
     }
 
     private fun findGroupChat(chatTitle: String): GroupChat {
         val authToken = acquireToken()
-        return api.getAvailableChats(authToken).getChats().filterIsInstance<GroupChat>().find { it.title == chatTitle }
+        return api.getAvailableChats(authToken).filterIsInstance<GroupChat>().find { it.title == chatTitle }
                 ?: throw ChatNotFoundException("This group chat doesn't exist!")
     }
 
     fun getGroupChatHistory(chatTitle: String): List<Message> {
         val authToken = acquireToken()
         val chat = findGroupChat(chatTitle)
-        return api.getChatMessages(authToken, chat.id).getMessages()
+        return api.getChatMessages(authToken, chat.id)
     }
 
     fun createGroupChat(chatTitle: String, members: List<String>): GroupChat {
