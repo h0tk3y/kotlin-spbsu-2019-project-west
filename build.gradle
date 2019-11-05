@@ -25,6 +25,8 @@ dependencies {
 
     // Library for JSON web tokens
     implementation 'com.auth0:java-jwt:3.8.3'
+    implementation "io.ktor:ktor-auth:$ktor_version"
+    implementation "io.ktor:ktor-auth-jwt:$ktor_version"
 
     // Use the Kotlin JDK 8 standard library.
     compile 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'

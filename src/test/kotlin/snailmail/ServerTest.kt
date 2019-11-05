@@ -5,6 +5,7 @@ import snailmail.core.InvalidTokenException
 import snailmail.core.TextMessage
 import snailmail.core.UserCredentials
 import snailmail.core.UserIsNotMemberException
+import snailmail.core.api.APITransportMapping
 import snailmail.core.api.AuthRegisterFailed
 import snailmail.core.api.AuthSuccessful
 import snailmail.core.api.AuthWrongCredentials
@@ -50,226 +51,294 @@ class ServerTest {
     fun `search for existing users`() {
         val server = Server()
 
-        server.register(UserCredentials("A", "aaaaa"))
-        server.register(UserCredentials("B", "bbbbb"))
+        val authResA = server.register(UserCredentials("A", "aaaaa"))
+        val tokenA = if (authResA is AuthSuccessful) authResA.token else null
+        val authResB = server.register(UserCredentials("B", "bbbbb"))
+        val tokenB = if (authResB is AuthSuccessful) authResB.token else null
 
-        assertEquals("B", server.searchByUsername("A", "B")!!.username)
-        assertEquals("A", server.searchByUsername("B", "A")!!.username)
+        assert(tokenA != null && "B" == server.searchByUsername(tokenA, "B")!!.username)
+        assert(tokenB != null && "A" == server.searchByUsername(tokenB, "A")!!.username)
     }
 
     @Test
     fun `search for nonexistent user`() {
         val server = Server()
 
-        server.register(UserCredentials("user", "abacaba"))
-
-        assertNull(server.searchByUsername("user", "alice"))
+        val authRes = server.register(UserCredentials("user", "abacaba"))
+        val token = if (authRes is AuthSuccessful) authRes.token else null
+        assert(token != null && server.searchByUsername(token, "alice") == null)
     }
 
     @Test
     fun `personal chat contains its members`() {
         val server = Server()
 
-        server.register(UserCredentials("A", "aaaaa"))
-        server.register(UserCredentials("B", "bbbbb"))
+        val authResA = server.register(UserCredentials("A", "aaaaa"))
+        val tokenA = if (authResA is AuthSuccessful) authResA.token else null
+        val authResB = server.register(UserCredentials("B", "bbbbb"))
+        val tokenB = if (authResB is AuthSuccessful) authResB.token else null
 
-        val chat = server.getPersonalChatWith("A", server.searchByUsername("A", "B")!!.id)
+        if (tokenA != null && tokenB != null) {
+            val chat = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "B")!!.id)
 
-        assert(chat.hasMember(server.searchByUsername("A", "A")!!.id))
-        assert(chat.hasMember(server.searchByUsername("B", "B")!!.id))
+            assert(chat.hasMember(server.searchByUsername(tokenA, "A")!!.id))
+            assert(chat.hasMember(server.searchByUsername(tokenB, "B")!!.id))
+        } else
+            assert(false)
     }
 
     @Test
     fun `identity of personal chats with the same user`() {
         val server = Server()
 
-        server.register(UserCredentials("A", "aaaaa"))
+        val authResA = server.register(UserCredentials("A", "aaaaa"))
+        val tokenA = if (authResA is AuthSuccessful) authResA.token else null
         server.register(UserCredentials("B", "bbbbb"))
 
-        val chat = server.getPersonalChatWith("A", server.searchByUsername("A", "B")!!.id)
-        val chatDuplicate = server.getPersonalChatWith("A", server.searchByUsername("A", "B")!!.id)
+        if (tokenA != null) {
+            val chat = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "B")!!.id)
+            val chatDuplicate = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "B")!!.id)
 
-        assertEquals(chat, chatDuplicate)
+            assertEquals(chat, chatDuplicate)
+        } else {
+            assert(false)
+        }
     }
 
     @Test
     fun `personal self-chat`() {
         val server = Server()
 
-        server.register(UserCredentials("user", "00000"))
+        val authRes = server.register(UserCredentials("user", "00000"))
+        val token = if (authRes is AuthSuccessful) authRes.token else null
 
-        val chat = server.getPersonalChatWith("user", server.searchByUsername("user", "user")!!.id)
+        if (token != null) {
+            val chat = server.getPersonalChatWith(token, server.searchByUsername(token, "user")!!.id)
 
-        assertEquals(server.searchByUsername("user", "user")!!.id, chat.person1)
-        assertEquals(server.searchByUsername("user", "user")!!.id, chat.person2)
+            assertEquals(server.searchByUsername(token, "user")!!.id, chat.person1)
+            assertEquals(server.searchByUsername(token, "user")!!.id, chat.person2)
+        } else {
+            assert(false)
+        }
     }
 
     @Test
     fun `no available chats`() {
         val server = Server()
 
-        server.register(UserCredentials("user", "abacaba"))
+        val authRes = server.register(UserCredentials("user", "abacaba"))
+        val token = if (authRes is AuthSuccessful) authRes.token else null
 
-        assert(server.getAvailableChats("user").getChats().isEmpty())
+        assert(token != null && server.getAvailableChats(token).getChats().isEmpty())
     }
 
     @Test
     fun `3 available chats`() {
         val server = Server()
 
-        server.register(UserCredentials("A", "aaaaa"))
+        val authResA = server.register(UserCredentials("A", "aaaaa"))
+        val tokenA = if (authResA is AuthSuccessful) authResA.token else null
         server.register(UserCredentials("B", "bbbbb"))
         server.register(UserCredentials("C", "ccccc"))
         server.register(UserCredentials("D", "ddddd"))
 
-        val chatWithB = server.getPersonalChatWith("A", server.searchByUsername("A", "B")!!.id)
-        val chatWithC = server.getPersonalChatWith("A", server.searchByUsername("A", "C")!!.id)
-        val chatWithD = server.getPersonalChatWith("A", server.searchByUsername("A", "D")!!.id)
+        if (tokenA != null) {
+            val chatWithB = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "B")!!.id)
+            val chatWithC = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "C")!!.id)
+            val chatWithD = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "D")!!.id)
 
-        val correctAvailableChats = listOf(chatWithB, chatWithC, chatWithD)
+            val correctAvailableChats = listOf(chatWithB, chatWithC, chatWithD)
 
-        assertEquals(correctAvailableChats, server.getAvailableChats("A").getChats())
+            assertEquals(correctAvailableChats, server.getAvailableChats(tokenA).getChats())
+        } else
+            assert(false)
     }
 
     @Test
     fun `sending a message to another user`() {
         val server = Server()
 
-        server.register(UserCredentials("A", "aaaaa"))
+
+        val authResA = server.register(UserCredentials("A", "aaaaa"))
+        val tokenA = if (authResA is AuthSuccessful) authResA.token else null
         server.register(UserCredentials("B", "bbbbb"))
 
-        val chat = server.getPersonalChatWith("A", server.searchByUsername("A", "B")!!.id)
-        val message = server.sendTextMessage("A", "<3", chat.id)
+        if (tokenA != null) {
+            val chat = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "B")!!.id)
+            val message = server.sendTextMessage(tokenA, "<3", chat.id)
 
-        assertEquals("<3", message.content)
+            assertEquals("<3", message.content)
+        } else
+            assert(false)
     }
 
     @Test
     fun `sending a message to yourself`() {
         val server = Server()
 
-        server.register(UserCredentials("user", "abacaba"))
+        val authRes = server.register(UserCredentials("user", "abacaba"))
+        val token = if (authRes is AuthSuccessful) authRes.token else null
 
-        val chat = server.getPersonalChatWith("user", server.searchByUsername("user", "user")!!.id)
-        val message = server.sendTextMessage("user", "odna krov' odna dusha odno sp", chat.id)
+        if (token != null) {
+            val chat = server.getPersonalChatWith(token, server.searchByUsername(token, "user")!!.id)
+            val message = server.sendTextMessage(token, "odna krov' odna dusha odno sp", chat.id)
 
-        assertEquals("odna krov' odna dusha odno sp", message.content)
+            assertEquals("odna krov' odna dusha odno sp", message.content)
+        } else
+            assert(false)
     }
 
     @Test
     fun `no messages in personal chat`() {
         val server = Server()
 
-        server.register(UserCredentials("A", "aaaaa"))
-        server.register(UserCredentials("B", "bbbbb"))
+        val authResA = server.register(UserCredentials("A", "aaaaa"))
+        val tokenA = if (authResA is AuthSuccessful) authResA.token else null
+        val authResB = server.register(UserCredentials("B", "bbbbb"))
+        val tokenB = if (authResB is AuthSuccessful) authResB.token else null
 
-        val chat = server.getPersonalChatWith("A", server.searchByUsername("A", "B")!!.id)
+        if (tokenA != null && tokenB != null) {
+            val chat = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "B")!!.id)
 
-        assert(server.getChatMessages("A", chat.id).getMessages().isEmpty())
-        assert(server.getChatMessages("B", chat.id).getMessages().isEmpty())
+            assert(server.getChatMessages(tokenA, chat.id).getMessages().isEmpty())
+            assert(server.getChatMessages(tokenB, chat.id).getMessages().isEmpty())
+        } else
+            assert(false)
     }
 
     @Test
     fun `messages from personal chat`() {
         val server = Server()
 
-        server.register(UserCredentials("A", "aaaaa"))
-        server.register(UserCredentials("B", "bbbbb"))
+        val authResA = server.register(UserCredentials("A", "aaaaa"))
+        val tokenA = if (authResA is AuthSuccessful) authResA.token else null
+        val authResB = server.register(UserCredentials("B", "bbbbb"))
+        val tokenB = if (authResB is AuthSuccessful) authResB.token else null
 
-        val chat = server.getPersonalChatWith("A", server.searchByUsername("A", "B")!!.id)
+        if (tokenA != null && tokenB != null) {
+            val chat = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "B")!!.id)
 
-        server.sendTextMessage("A", "h e l l o", chat.id)
-        server.sendTextMessage("B", "#__#", chat.id)
-        server.sendTextMessage("A", "", chat.id)
-        server.sendTextMessage("A", "", chat.id)
+            server.sendTextMessage(tokenA, "h e l l o", chat.id)
+            server.sendTextMessage(tokenB, "#__#", chat.id)
+            server.sendTextMessage(tokenA, "", chat.id)
+            server.sendTextMessage(tokenA, "", chat.id)
 
-        val correctChatMessages = listOf("h e l l o", "#__#", "", "")
+            val correctChatMessages = listOf("h e l l o", "#__#", "", "")
 
-        assertEquals(correctChatMessages,
-                server.getChatMessages("A", chat.id).getMessages().map { (it as TextMessage).content })
+            assertEquals(correctChatMessages,
+                server.getChatMessages(tokenA, chat.id).getMessages().map { (it as TextMessage).content })
+        } else
+            assert(false)
     }
 
     @Test
     fun `messages from personal self-chat`() {
         val server = Server()
 
-        server.register(UserCredentials("user", "abacaba"))
+        val authRes = server.register(UserCredentials("user", "abacaba"))
+        val token = if (authRes is AuthSuccessful) authRes.token else null
 
-        val chat = server.getPersonalChatWith("user", server.searchByUsername("user", "user")!!.id)
-        server.sendTextMessage("user", "_____", chat.id)
+        if (token != null) {
+            val chat = server.getPersonalChatWith(token, server.searchByUsername(token, "user")!!.id)
+            server.sendTextMessage(token, "_____", chat.id)
 
-        assertEquals(1, server.getChatMessages("user", chat.id).getMessages().size)
-        assertEquals("_____",
-                (server.getChatMessages("user", chat.id).getMessages().first() as TextMessage).content)
+            assertEquals(1, server.getChatMessages(token, chat.id).getMessages().size)
+            assertEquals(
+                "_____",
+                (server.getChatMessages(token, chat.id).getMessages().first() as TextMessage).content
+            )
+        } else
+            assert(false)
     }
 
     @Test
     fun `group chat`() {
         val server = Server()
 
-        server.register(UserCredentials("A", "aaaaa"))
+        val authResA = server.register(UserCredentials("A", "aaaaa"))
+        val tokenA = if (authResA is AuthSuccessful) authResA.token else null
         server.register(UserCredentials("B", "bbbbb"))
         server.register(UserCredentials("C", "ccccc"))
         server.register(UserCredentials("D", "ddddd"))
 
-        val members = listOf(server.searchByUsername("A", "B")!!.id,
-                server.searchByUsername("A", "C")!!.id,
-                server.searchByUsername("A", "D")!!.id)
+        if (tokenA != null) {
+            val members = listOf(
+                server.searchByUsername(tokenA, "B")!!.id,
+                server.searchByUsername(tokenA, "C")!!.id,
+                server.searchByUsername(tokenA, "D")!!.id
+            )
 
-        val groupChat = server.createGroupChat("A", "", members)
+            val groupChat = server.createGroupChat(tokenA, "", members)
 
-        assertEquals(server.searchByUsername("A", "A")!!.id, groupChat.owner)
-        assertEquals(members, groupChat.members)
+            assertEquals(server.searchByUsername(tokenA, "A")!!.id, groupChat.owner)
+            assertEquals(members, groupChat.members)
+        } else
+            assert(false)
     }
 
     @Test
     fun `group self-chat`() {
         val server = Server()
 
-        server.register(UserCredentials("user", "abacaba"))
+        val authRes = server.register(UserCredentials("user", "abacaba"))
+        val token = if (authRes is AuthSuccessful) authRes.token else null
 
-        val members = listOf(server.searchByUsername("user", "user")!!.id)
-        val groupChat = server.createGroupChat("user", "", members)
+        if (token != null) {
+            val members = listOf(server.searchByUsername(token, "user")!!.id)
+            val groupChat = server.createGroupChat(token, "", members)
 
-        assertEquals(server.searchByUsername("user", "user")!!.id, groupChat.owner)
-        assertEquals(members, groupChat.members)
+            assertEquals(server.searchByUsername(token, "user")!!.id, groupChat.owner)
+            assertEquals(members, groupChat.members)
+        } else
+            assert(false)
     }
 
     @Test
     fun `getting available chats with group chat`() {
         val server = Server()
 
-        server.register(UserCredentials("A", "aaaaa"))
+        val authResA = server.register(UserCredentials("A", "aaaaa"))
+        val tokenA = if (authResA is AuthSuccessful) authResA.token else null
         server.register(UserCredentials("B", "bbbbb"))
         server.register(UserCredentials("C", "ccccc"))
         server.register(UserCredentials("D", "ddddd"))
 
-        val chatWithB = server.getPersonalChatWith("A", server.searchByUsername("A", "B")!!.id)
-        val chatWithC = server.getPersonalChatWith("A", server.searchByUsername("A", "C")!!.id)
-        val chatWithD = server.getPersonalChatWith("A", server.searchByUsername("A", "D")!!.id)
+        if (tokenA != null) {
+            val chatWithB = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "B")!!.id)
+            val chatWithC = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "C")!!.id)
+            val chatWithD = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "D")!!.id)
 
-        val members = listOf(server.searchByUsername("A", "B")!!.id,
-                server.searchByUsername("A", "C")!!.id,
-                server.searchByUsername("A", "D")!!.id)
+            val members = listOf(
+                server.searchByUsername(tokenA, "B")!!.id,
+                server.searchByUsername(tokenA, "C")!!.id,
+                server.searchByUsername(tokenA, "D")!!.id
+            )
 
-        val chatABCD = server.createGroupChat("A", "", members)
+            val chatABCD = server.createGroupChat(tokenA, "", members)
 
-        val correctAvailableChats = listOf(chatWithB, chatWithC, chatWithD, chatABCD)
+            val correctAvailableChats = listOf(chatWithB, chatWithC, chatWithD, chatABCD)
 
-        assertEquals(correctAvailableChats, server.getAvailableChats("A").getChats())
+            assertEquals(correctAvailableChats, server.getAvailableChats(tokenA).getChats())
+        } else
+            assert(false)
     }
 
     @Test
     fun `trying to get messages from personal chat by nonmember results in an exception`() {
         val server = Server()
 
-        server.register(UserCredentials("alice", "aaaaa"))
+        val authResAlice = server.register(UserCredentials("alice", "aaaaa"))
+        val tokenAlice = if (authResAlice is AuthSuccessful) authResAlice.token else null
         server.register(UserCredentials("bob", "bbbbb"))
-        server.register(UserCredentials("eve", "eeeee"))
+        val authResEve = server.register(UserCredentials("eve", "eeeee"))
+        val tokenEve = if (authResEve is AuthSuccessful) authResEve.token else null
 
-        val chat = server.getPersonalChatWith("alice", server.searchByUsername("alice", "bob")!!.id)
+        if (tokenAlice != null && tokenEve != null) {
+            val chat = server.getPersonalChatWith(tokenAlice, server.searchByUsername(tokenAlice, "bob")!!.id)
 
-        assertFailsWith<UserIsNotMemberException> { server.getChatMessages("eve", chat.id) }
+            assertFailsWith<UserIsNotMemberException> { server.getChatMessages(tokenEve, chat.id) }
+        } else
+            assert(false)
     }
 
     @Test
@@ -292,48 +361,67 @@ class ServerTest {
     fun `getting personal chat with invalid token results in an exception`() {
         val server = Server()
 
-        server.register(UserCredentials("userRegistered", "abacaba"))
-        val userRegistered = server.searchByUsername("userRegistered", "userRegistered")!!
+        val authRes = server.register(UserCredentials("userRegistered", "abacaba"))
+        val token = if (authRes is AuthSuccessful) authRes.token else null
 
-        assertFailsWith<InvalidTokenException> { server.getPersonalChatWith("user", userRegistered.id) }
+        if (token != null) {
+            val userRegistered = server.searchByUsername(token, "userRegistered")!!
+
+            assertFailsWith<InvalidTokenException> { server.getPersonalChatWith("user", userRegistered.id) }
+        } else
+            assert(false)
     }
 
     @Test
     fun `sending message with invalid token results in an exception`() {
         val server = Server()
 
-        server.register(UserCredentials("A", "aaaaa"))
+        val authResA = server.register(UserCredentials("A", "aaaaa"))
+        val tokenA = if (authResA is AuthSuccessful) authResA.token else null
         server.register(UserCredentials("B", "bbbbb"))
 
-        val chat = server.getPersonalChatWith("A", server.searchByUsername("A", "B")!!.id)
+        if (tokenA != null) {
+            val chat = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "B")!!.id)
 
-        assertFailsWith<InvalidTokenException> { server.sendTextMessage("C", "_", chat.id) }
+            assertFailsWith<InvalidTokenException> { server.sendTextMessage("C", "_", chat.id) }
+        } else {
+            assert(false)
+        }
     }
 
     @Test
     fun `getting messages from personal chat with invalid token results in an exception`() {
         val server = Server()
 
-        server.register(UserCredentials("A", "aaaaa"))
+        val authResA = server.register(UserCredentials("A", "aaaaa"))
+        val tokenA = if (authResA is AuthSuccessful) authResA.token else null
         server.register(UserCredentials("B", "bbbbb"))
 
-        val chat = server.getPersonalChatWith("A", server.searchByUsername("A", "B")!!.id)
+        if (tokenA != null) {
+            val chat = server.getPersonalChatWith(tokenA, server.searchByUsername(tokenA, "B")!!.id)
 
-        assertFailsWith<InvalidTokenException> { server.getChatMessages("C", chat.id) }
+            assertFailsWith<InvalidTokenException> { server.getChatMessages("C", chat.id) }
+        } else
+            assert(false)
     }
 
     @Test
     fun `creating group chat with invalid token results in an exception`() {
         val server = Server()
 
-        server.register(UserCredentials("A", "aaaaa"))
-        server.register(UserCredentials("B", "bbbbb"))
+        val authResA = server.register(UserCredentials("A", "aaaaa"))
+        val tokenA = if (authResA is AuthSuccessful) authResA.token else null
+        val authResB = server.register(UserCredentials("B", "bbbbb"))
+        val tokenB = if (authResB is AuthSuccessful) authResB.token else null
 
-        val userA = server.searchByUsername("A", "A")!!
-        val userB = server.searchByUsername("B", "B")!!
+        if (tokenA != null && tokenB != null) {
+            val userA = server.searchByUsername(tokenA, "A")!!
+            val userB = server.searchByUsername(tokenB, "B")!!
 
-        val members = listOf(userA.id, userB.id)
+            val members = listOf(userA.id, userB.id)
 
-        assertFailsWith<InvalidTokenException> { server.createGroupChat("C", "", members) }
+            assertFailsWith<InvalidTokenException> { server.createGroupChat("C", "", members) }
+        } else
+            assert(false)
     }
 }
