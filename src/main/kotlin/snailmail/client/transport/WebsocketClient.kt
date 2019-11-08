@@ -52,12 +52,12 @@ class WebsocketClient(private val host: String, private val port: Int) : API {
     }
 
     override fun authenticate(credentials: UserCredentials): AuthToken {
-        val res = request(AuthenticateRequest(credentials.username, credentials.password))
+        val res = request(AuthenticateRequest(credentials.username, credentials.passwordHash))
         return (res as AuthenticateResponse).result
     }
 
     override fun register(credentials: UserCredentials): AuthToken {
-        val res = request(RegisterRequest(credentials.username, credentials.password))
+        val res = request(RegisterRequest(credentials.username, credentials.passwordHash))
         return (res as RegisterResponse).result
     }
 

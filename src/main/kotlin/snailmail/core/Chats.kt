@@ -36,9 +36,9 @@ class GroupChat(id: UUID,
                 val title: String,
                 val owner: UUID,
                 val members: List<UUID>,
-                val blacklist: List<UUID>,
-                val publicTag: String?,
-                val privateInviteToken: String?
+                val blacklist: List<UUID> = listOf(),
+                val publicTag: String? = null,
+                val privateInviteToken: String? = null
 ) : Chat("group", id) {
     override fun hasMember(user: UUID): Boolean {
         return owner == user || members.contains(user)

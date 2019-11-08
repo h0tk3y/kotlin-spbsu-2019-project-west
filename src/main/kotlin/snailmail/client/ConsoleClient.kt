@@ -38,7 +38,7 @@ class ConsoleClient(api: API) {
         return UserCredentials(username, password)
     }
 
-    fun startSession() {
+    private fun startSession() {
         println("Welcome to SnailMail!")
         while (true) {
             print("Do you have an account? (y/n) ")
@@ -224,7 +224,7 @@ class ConsoleClient(api: API) {
         return true
     }
 
-    fun writeCommand(): Boolean {
+    private fun writeCommand(): Boolean {
         print("> ")
         val cmd = readLine()
         if (cmd == null || cmd.toLowerCase() == "quit")
@@ -232,22 +232,26 @@ class ConsoleClient(api: API) {
         return executeCommand(cmd)
     }
 
-    fun endSession() {
+    private fun endSession() {
     }
 
     private fun formatTextMessage(message: TextMessage): String {
         return StringBuilder()
                 .append("${message.date}| ")
                 .apply {
-                    if (message.sender != null) {
-                        try {
-                            val sender = client.findUserById(message.sender)
-                            this.append("${sender.username}: ")
-                        } catch (e: Exception) {
-                            this.append("<deleted>: ")
-                        }
+                    try {
+                        val sender = client.findUserById(message.sender)
+                        this.append("${sender.username}: ")
+                    } catch (e: Exception) {
+                        this.append("<deleted>: ")
                     }
                 }
                 .append(message.content).toString()
+    }
+
+    fun run() {
+        startSession()
+        while (writeCommand()) {}
+        endSession()
     }
 }

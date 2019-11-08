@@ -26,7 +26,5 @@ fun main(args: Array<String>) {
     }
 
     val consoleClient = ConsoleClient(api)
-    consoleClient.startSession()
-    while (consoleClient.writeCommand());
-    consoleClient.endSession()
+    consoleClient.run()
 }

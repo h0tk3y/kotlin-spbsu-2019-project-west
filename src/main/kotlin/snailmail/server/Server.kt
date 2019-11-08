@@ -21,7 +21,7 @@ class Server : API {
 
     override fun authenticate(credentials: UserCredentials): AuthToken {
         val username = credentials.username
-        val password = credentials.password
+        val password = credentials.passwordHash
         if (!userCredentials.contains(username) || userCredentials[username] != password)
             throw WrongCredentialsException()
         else {
@@ -36,7 +36,7 @@ class Server : API {
         if (userCredentials.contains(credentials.username))
             throw UnavailableUsernameException()
         val user = User(UUID.randomUUID(), credentials.username, credentials.username)
-        userCredentials[credentials.username] = credentials.password
+        userCredentials[credentials.username] = credentials.passwordHash
         userByUsername[credentials.username] = user
         userById[user.id] = user
         return authenticate(credentials)
@@ -102,7 +102,7 @@ class Server : API {
             time
         }
         val msg = TextMessage(
-                id = UUID.randomUUID(), chatId = chat,
+                id = UUID.randomUUID(), chat = chat,
                 sender = userIdByToken[token]
                         ?: throw InternalServerErrorException("Token is valid, but user doesn't exist."),
                 content = text, date = date
