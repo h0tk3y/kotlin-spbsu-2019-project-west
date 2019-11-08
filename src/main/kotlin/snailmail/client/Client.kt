@@ -18,7 +18,7 @@ class Client(private val api: Api) {
 
     fun findUser(username: String): User {
         val authToken = acquireToken()
-        return api.searchByUsername(authToken, username) ?: throw UserNotFoundException("This user doesn't exist")
+        return api.getUserByUsername(authToken, username) ?: throw UserNotFoundException("This user doesn't exist")
     }
 
     fun findUserById(id: UUID): User {

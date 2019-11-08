@@ -86,7 +86,7 @@ class WebsocketClient(private val host: String, private val port: Int) : Api {
         return (res as SendTextMessageResponse).message
     }
 
-    override fun searchByUsername(token: AuthToken, username: String): User? {
+    override fun getUserByUsername(token: AuthToken, username: String): User? {
         val res = request(SearchByUsernameRequest(token, username))
         return (res as SearchByUsernameResponse).user
     }

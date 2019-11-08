@@ -45,7 +45,7 @@ class WebsocketServer(private val api: Api) {
         is SendTextMessageRequest ->
             SendTextMessageResponse(api.sendTextMessage(req.token, req.text, req.chat))
         is SearchByUsernameRequest ->
-            SearchByUsernameResponse(api.searchByUsername(req.token, req.username))
+            SearchByUsernameResponse(api.getUserByUsername(req.token, req.username))
         is GetUserByIdRequest ->
             GetUserByIdResponse(api.getUserById(req.token, req.id))
     }

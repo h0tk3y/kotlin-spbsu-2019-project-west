@@ -126,7 +126,7 @@ class Server : Api {
         return chat
     }
 
-    override fun searchByUsername(token: AuthToken, username: String): User? {
+    override fun getUserByUsername(token: AuthToken, username: String): User? {
         if (!tokenIsValid(token))
             throw InvalidTokenException()
         return userByUsername[username]
