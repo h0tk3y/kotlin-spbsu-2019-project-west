@@ -139,9 +139,9 @@ class MainActivity(parent: LanternaClient) : Activity(parent) {
             val label = Label("")
             when (message) {
                 is TextMessage -> {
-                    val sender = message.sender?.let {
+                    val sender = message.sender.let {
                         client.findUserById(message.sender)
-                    } ?: User(UUID.randomUUID(), "<system>", "<system>")
+                    }
                     label.text = sender.displayName + ": " + message.content
                 }
                 else -> {

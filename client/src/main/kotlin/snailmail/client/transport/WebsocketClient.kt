@@ -7,6 +7,7 @@ import io.ktor.client.features.websocket.ws
 import io.ktor.http.HttpMethod
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
+import io.ktor.util.KtorExperimentalAPI
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import snailmail.core.*
