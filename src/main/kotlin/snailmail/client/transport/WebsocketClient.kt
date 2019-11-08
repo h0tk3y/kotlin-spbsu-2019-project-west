@@ -10,11 +10,11 @@ import io.ktor.http.cio.websocket.readText
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import snailmail.core.*
-import snailmail.core.api.API
+import snailmail.core.api.Api
 import snailmail.core.api.AuthToken
 import java.util.*
 
-class WebsocketClient(private val host: String, private val port: Int) : API {
+class WebsocketClient(private val host: String, private val port: Int) : Api {
     private val client = HttpClient {
         install(WebSockets)
     }

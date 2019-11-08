@@ -4,9 +4,9 @@ import snailmail.core.GroupChat
 import snailmail.core.PersonalChat
 import snailmail.core.TextMessage
 import snailmail.core.UserCredentials
-import snailmail.core.api.API
+import snailmail.core.api.Api
 
-class ConsoleClient(api: API) {
+class ConsoleClient(api: Api) {
     private val client = Client(api)
 
     private val commandsDescription = mapOf<Pair<String, List<String>>, String>(

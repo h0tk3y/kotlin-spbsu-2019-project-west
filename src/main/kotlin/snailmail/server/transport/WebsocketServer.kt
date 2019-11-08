@@ -19,11 +19,11 @@ import io.ktor.util.pipeline.PipelineContext
 import io.ktor.websocket.WebSockets
 import io.ktor.websocket.webSocket
 import snailmail.core.*
-import snailmail.core.api.API
-import snailmail.core.api.APITransportMapping
+import snailmail.core.api.Api
+import snailmail.core.api.ApiTransportMapping
 import java.util.*
 
-class WebsocketServer(private val api: API) {
+class WebsocketServer(private val api: Api) {
     private val klaxon = Klaxon()
             .converter(UUIDConverter())
             .converter(DateConverter())
@@ -51,7 +51,7 @@ class WebsocketServer(private val api: API) {
     }
 
     fun run(port: Int = 9999) {
-        fun RESTPath(path: String) = "/api/" + path.trimStart('/')
+        fun restPath(path: String) = "/api/" + path.trimStart('/')
 
         embeddedServer(Netty, port)
         {
@@ -84,72 +84,72 @@ class WebsocketServer(private val api: API) {
 
                 // HTTP REST API routes
 
-                get(RESTPath(APITransportMapping.Auth.authenticate.REST)) {
+                get(restPath(ApiTransportMapping.Auth.authenticate.Rest)) {
                     safeProcessing {
                         val username = call.parameters["username"]
                                 ?: throw ProtocolErrorException()
                         val password = call.parameters["password"]
                                 ?: throw ProtocolErrorException()
-                        handleHTTPRequest(AuthenticateRequest(username, password))
+                        handleHttpRequest(AuthenticateRequest(username, password))
                     }
                 }
-                post(RESTPath(APITransportMapping.Auth.register.REST)) {
+                post(restPath(ApiTransportMapping.Auth.register.Rest)) {
                     safeProcessing {
                         val username = call.parameters["username"]
                                 ?: throw ProtocolErrorException()
                         val password = call.parameters["password"]
                                 ?: throw ProtocolErrorException()
-                        handleHTTPRequest(RegisterRequest(username, password))
+                        handleHttpRequest(RegisterRequest(username, password))
                     }
                 }
 
-                get(RESTPath(APITransportMapping.Chat.getAvailableChats.REST)) {
+                get(restPath(ApiTransportMapping.Chat.getAvailableChats.Rest)) {
                     authenticated { token ->
-                        handleHTTPRequest(GetAvailableChatsRequest(token))
+                        handleHttpRequest(GetAvailableChatsRequest(token))
                     }
                 }
-                get(RESTPath(APITransportMapping.Chat.getPersonalChatWith.REST)) {
+                get(restPath(ApiTransportMapping.Chat.getPersonalChatWith.Rest)) {
                     authenticated { token ->
                         val userId = UUID.fromString(call.parameters["userId"]
                                 ?: throw ProtocolErrorException())
-                        handleHTTPRequest(GetPersonalChatWithRequest(token, userId))
+                        handleHttpRequest(GetPersonalChatWithRequest(token, userId))
                     }
                 }
-                post(RESTPath(APITransportMapping.Chat.createGroupChat.REST)) {
+                post(restPath(ApiTransportMapping.Chat.createGroupChat.Rest)) {
                     authenticated { token ->
                         val title = call.parameters["title"] ?: throw ProtocolErrorException()
                         val invitedMembers = call.parameters.getAll("invitedMembers")?.map { UUID.fromString(it) }
                                 ?: listOf()
-                        handleHTTPRequest(CreateGroupChatRequest(token, title, invitedMembers))
+                        handleHttpRequest(CreateGroupChatRequest(token, title, invitedMembers))
                     }
                 }
 
-                get(RESTPath(APITransportMapping.Message.getChatMessages.REST)) {
+                get(restPath(ApiTransportMapping.Message.getChatMessages.Rest)) {
                     authenticated { token ->
                         val chat = UUID.fromString(call.parameters["chatId"]
                                 ?: throw ProtocolErrorException())
-                        handleHTTPRequest(GetChatMessagesRequest(token, chat))
+                        handleHttpRequest(GetChatMessagesRequest(token, chat))
                     }
                 }
-                post(RESTPath(APITransportMapping.Message.sendTextMessage.REST)) {
+                post(restPath(ApiTransportMapping.Message.sendTextMessage.Rest)) {
                     authenticated { token ->
                         val chat = UUID.fromString(call.parameters["chatId"]
                                 ?: throw ProtocolErrorException())
                         val text = call.receiveText()
-                        handleHTTPRequest(SendTextMessageRequest(token, text, chat))
+                        handleHttpRequest(SendTextMessageRequest(token, text, chat))
                     }
                 }
 
-                get(RESTPath(APITransportMapping.User.getUserById.REST)) {
+                get(restPath(ApiTransportMapping.User.getUserById.Rest)) {
                     authenticated { token ->
                         val id = UUID.fromString(call.parameters["userId"] ?: throw ProtocolErrorException())
-                        handleHTTPRequest(GetUserByIdRequest(token, id))
+                        handleHttpRequest(GetUserByIdRequest(token, id))
                     }
                 }
-                get(RESTPath(APITransportMapping.User.searchByUsername.REST)) {
+                get(restPath(ApiTransportMapping.User.searchByUsername.Rest)) {
                     authenticated { token ->
                         val username = call.parameters["username"] ?: throw ProtocolErrorException()
-                        handleHTTPRequest(SearchByUsernameRequest(token, username))
+                        handleHttpRequest(SearchByUsernameRequest(token, username))
                     }
                 }
             }
@@ -180,7 +180,7 @@ class WebsocketServer(private val api: API) {
         call.respondText(res, status = code, contentType = ContentType.Application.Json)
     }
 
-    private suspend fun PipelineContext<Unit, ApplicationCall>.handleHTTPRequest(req: ServerRequest) {
+    private suspend fun PipelineContext<Unit, ApplicationCall>.handleHttpRequest(req: ServerRequest) {
         try {
             handleWithCode(HttpStatusCode.OK, klaxon.toJsonString(processRequest(req)))
         } catch (e: InvalidTokenException) {

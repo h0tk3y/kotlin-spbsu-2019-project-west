@@ -6,7 +6,7 @@ import snailmail.core.api.*
 import java.util.*
 import kotlin.collections.HashMap
 
-class Server : API {
+class Server : Api {
     private var userCredentials = HashMap<String, String>()
     var chats = mutableListOf<Chat>()
     private var userByUsername = HashMap<String, User>()

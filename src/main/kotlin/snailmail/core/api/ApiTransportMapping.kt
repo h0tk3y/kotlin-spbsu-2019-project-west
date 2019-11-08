@@ -1,7 +1,7 @@
 package snailmail.core.api
 
-object APITransportMapping {
-    data class Mapping(val method: String, val REST: String)
+object ApiTransportMapping {
+    data class Mapping(val method: String, val Rest: String)
 
     object Auth {
         val authenticate = Mapping("auth.authenticate", "/auth/{username}/{password}/" /*GET*/)

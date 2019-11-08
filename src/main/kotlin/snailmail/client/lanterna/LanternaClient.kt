@@ -8,9 +8,9 @@ import com.googlecode.lanterna.screen.TerminalScreen
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory
 import com.googlecode.lanterna.terminal.Terminal
 import snailmail.client.Client
-import snailmail.core.api.API
+import snailmail.core.api.Api
 
-class LanternaClient(api: API) {
+class LanternaClient(api: Api) {
     val client = Client(api)
     // Setup terminal and screen layers
     val terminal: Terminal = DefaultTerminalFactory().createTerminal()

@@ -3,7 +3,7 @@ package snailmail.core.api
 import snailmail.core.*
 import java.util.*
 
-interface API {
+interface Api {
     fun authenticate(credentials: UserCredentials): AuthToken
     fun register(credentials: UserCredentials): AuthToken
     fun getAvailableChats(token: AuthToken): List<Chat>

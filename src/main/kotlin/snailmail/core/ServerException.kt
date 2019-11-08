@@ -1,10 +1,10 @@
 package snailmail.core
 
 import com.beust.klaxon.*
-import snailmail.core.api.APITransportMapping
+import snailmail.core.api.ApiTransportMapping
 import kotlin.reflect.KClass
 
-@TypeFor(field = APITransportMapping.Convention.errorType, adapter = ServerExceptionAdapter::class)
+@TypeFor(field = ApiTransportMapping.Convention.errorType, adapter = ServerExceptionAdapter::class)
 abstract class ServerException(message: String) : Exception(message) {
     abstract fun errorType(): String
 }
@@ -62,7 +62,7 @@ class ServerExceptionConverter : Converter {
 
     override fun fromJson(jv: JsonValue): Any? {
         if (jv.obj == null) throw java.lang.IllegalArgumentException("Malformed Server Exception")
-        val errorType = (jv.obj?.get(APITransportMapping.Convention.errorType) as? String)
+        val errorType = (jv.obj?.get(ApiTransportMapping.Convention.errorType) as? String)
                 ?: throw java.lang.IllegalArgumentException("Malformed Server Exception")
         val message = (jv.obj?.get("message") as? String)
                 ?: throw java.lang.IllegalArgumentException("Malformed Server Exception")
@@ -80,6 +80,6 @@ class ServerExceptionConverter : Converter {
 
     override fun toJson(value: Any): String {
         val e = value as ServerException
-        return """{"${APITransportMapping.Convention.errorType}": "${e.errorType()}", "message": "${e.message?.apply { Render.escapeString(this) }}"}"""
+        return """{"${ApiTransportMapping.Convention.errorType}": "${e.errorType()}", "message": "${e.message?.apply { Render.escapeString(this) }}"}"""
     }
 }
