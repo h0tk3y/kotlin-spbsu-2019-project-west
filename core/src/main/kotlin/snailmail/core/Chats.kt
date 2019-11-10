@@ -25,13 +25,6 @@ class PersonalChat(
     }
 }
 
-/**
- * What happens when owner leaves the chat:
- * (*) if there is no more users is the group chat, it must be deleted
- * (*) otherwise the new owner is the first user in the members list
- *
- * Owner cannot be kicked
- */
 class GroupChat(id: UUID,
                 val title: String,
                 val owner: UUID,

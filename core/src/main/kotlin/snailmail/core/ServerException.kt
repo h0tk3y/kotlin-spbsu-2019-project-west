@@ -31,16 +31,28 @@ class UserIsBannedException : ServerException("User is banned") {
     override fun errorType(): String = "user is banned"
 }
 
-class ChatDoesNotExistException : ServerException("Chat does not exist") {
-    override fun errorType() = "chat does not exist"
-}
-
-class InvalidChatIdException : ServerException("Invalid chat id") {
-    override fun errorType() = "invalid chat id"
+class ChatDoesNotExistOrUnavailableException : ServerException("Chat does not exist or unavailable") {
+    override fun errorType() = "chat does not exist or unavailable"
 }
 
 class UserIsNotMemberException : ServerException("User is not a member of this chat") {
     override fun errorType() = "user is not a member"
+}
+
+class UserIsAlreadyMemberException : ServerException("User is already a member of this chat") {
+    override fun errorType() = "user is already a member"
+}
+
+class PublicTagIsUnavailableException : ServerException("Public tag is unavailable") {
+    override fun errorType() = "public tag is unavailable"
+}
+
+class MediaDoesNotExistException : ServerException("Media does not exist") {
+    override fun errorType() = "media does not exist"
+}
+
+class MessageDoesNotExistException : ServerException("Message does not exist") {
+    override fun errorType() = "message does not exist"
 }
 
 class OperationFailedException(message: String = "Operation failed") : ServerException(message) {
