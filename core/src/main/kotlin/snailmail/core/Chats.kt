@@ -36,6 +36,7 @@ class GroupChat(id: UUID,
                 val title: String,
                 val owner: UUID,
                 val members: List<UUID>,
+                val avatar: Photo? = null,
                 val blacklist: List<UUID> = listOf(),
                 val publicTag: String? = null,
                 val privateInviteToken: String? = null

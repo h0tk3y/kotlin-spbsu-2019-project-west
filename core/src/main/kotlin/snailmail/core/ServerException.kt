@@ -3,9 +3,11 @@ package snailmail.core
 import com.beust.klaxon.*
 import snailmail.core.api.ApiTransportMapping
 import kotlin.reflect.KClass
+import kotlin.reflect.full.createInstance
+import kotlin.reflect.full.primaryConstructor
 
 @TypeFor(field = ApiTransportMapping.Convention.errorType, adapter = ServerExceptionAdapter::class)
-abstract class ServerException(message: String) : Exception(message) {
+sealed class ServerException(message: String) : Exception(message) {
     abstract fun errorType(): String
 }
 
@@ -21,12 +23,28 @@ class InvalidTokenException : ServerException("Invalid token") {
     override fun errorType() = "invalid token"
 }
 
+class UserDoesNotExistException : ServerException("User does not exist") {
+    override fun errorType() = "user does not exist"
+}
+
+class UserIsBannedException : ServerException("User is banned") {
+    override fun errorType(): String = "user is banned"
+}
+
+class ChatDoesNotExistException : ServerException("Chat does not exist") {
+    override fun errorType() = "chat does not exist"
+}
+
 class InvalidChatIdException : ServerException("Invalid chat id") {
     override fun errorType() = "invalid chat id"
 }
 
 class UserIsNotMemberException : ServerException("User is not a member of this chat") {
     override fun errorType() = "user is not a member"
+}
+
+class OperationFailedException(message: String = "Operation failed") : ServerException(message) {
+    override fun errorType() = "operation failed"
 }
 
 class ProtocolErrorException(message: String = "Request is malformed") : ServerException(message) {
@@ -38,27 +56,16 @@ class InternalServerErrorException(message: String = "Something bad happened..."
 }
 
 class ServerExceptionAdapter : TypeAdapter<ServerException> {
-    override fun classFor(type: Any): KClass<out ServerException> = when (type as String) {
-        UnavailableUsernameException().errorType() -> UnavailableUsernameException::class
-        WrongCredentialsException().errorType() -> WrongCredentialsException::class
-        InvalidTokenException().errorType() -> InvalidTokenException::class
-        InvalidChatIdException().errorType() -> InvalidChatIdException::class
-        UserIsNotMemberException().errorType() -> UserIsNotMemberException::class
-        ProtocolErrorException().errorType() -> ProtocolErrorException::class
-        InternalServerErrorException().errorType() -> InternalServerErrorException::class
-        else -> throw IllegalArgumentException("Unknown error-type: $type")
+    private val mapping = ServerException::class.sealedSubclasses.associateBy { it.createInstance().errorType() }
+    override fun classFor(type: Any): KClass<out ServerException> {
+        return mapping[type as String] ?: throw IllegalArgumentException("Unknown error-type: $type")
     }
 }
 
 class ServerExceptionConverter : Converter {
-    override fun canConvert(cls: Class<*>) =
-            arrayOf(UnavailableUsernameException::class.java,
-                    WrongCredentialsException::class.java,
-                    InvalidTokenException::class.java,
-                    InvalidChatIdException::class.java,
-                    UserIsNotMemberException::class.java,
-                    ProtocolErrorException::class.java,
-                    InternalServerErrorException::class.java).contains(cls)
+    private val mapping = ServerException::class.sealedSubclasses.associateBy { it.createInstance().errorType() }
+
+    override fun canConvert(cls: Class<*>) = ServerException::class.sealedSubclasses.map { it.java }.contains(cls)
 
     override fun fromJson(jv: JsonValue): Any? {
         if (jv.obj == null) throw java.lang.IllegalArgumentException("Malformed Server Exception")
@@ -66,16 +73,13 @@ class ServerExceptionConverter : Converter {
                 ?: throw java.lang.IllegalArgumentException("Malformed Server Exception")
         val message = (jv.obj?.get("message") as? String)
                 ?: throw java.lang.IllegalArgumentException("Malformed Server Exception")
-        return when (errorType) {
-            UnavailableUsernameException().errorType() -> UnavailableUsernameException()
-            WrongCredentialsException().errorType() -> WrongCredentialsException()
-            InvalidTokenException().errorType() -> InvalidTokenException()
-            InvalidChatIdException().errorType() -> InvalidChatIdException()
-            UserIsNotMemberException().errorType() -> UserIsNotMemberException()
-            ProtocolErrorException().errorType() -> ProtocolErrorException(message)
-            InternalServerErrorException().errorType() -> InternalServerErrorException(message)
-            else -> throw IllegalArgumentException("Unknown error-type: $errorType")
-        }
+        val klass = mapping[errorType]
+                ?: throw IllegalArgumentException("Unknown error-type: ${errorType}")
+        val hasMessage = klass.primaryConstructor?.parameters?.any { it.name?.contentEquals("message") ?: false }
+                ?: false
+        if (hasMessage)
+            return klass.primaryConstructor?.call(message)
+        return klass.createInstance()
     }
 
     override fun toJson(value: Any): String {

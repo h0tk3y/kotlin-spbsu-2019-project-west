@@ -114,7 +114,7 @@ class ServerTest {
 
         server.register(UserCredentials("user", "abacaba"))
 
-        assert(server.getAvailableChats("user").isEmpty())
+        assert(server.getChats("user").isEmpty())
     }
 
     @Test
@@ -124,7 +124,7 @@ class ServerTest {
                 val correctAvailableChats = listOf("B", "C", "D").map {
                     server.getPersonalChatWith("A", server.getUserByUsername("A", it)!!.id)
                 }
-                assertEquals(correctAvailableChats, server.getAvailableChats("A"))
+            assertEquals(correctAvailableChats, server.getChats("A"))
         }
     }
 
@@ -229,7 +229,7 @@ class ServerTest {
                 }
                 val chatABCD = server.createGroupChat("A", "", members)
                 val correctAvailableChats = chats + chatABCD
-                assertEquals(correctAvailableChats, server.getAvailableChats("A"))
+            assertEquals(correctAvailableChats, server.getChats("A"))
         }
     }
 
@@ -251,7 +251,7 @@ class ServerTest {
     fun `getting available chats with invalid token results in an exception`() {
         val server = Server()
 
-        assertFailsWith<InvalidTokenException> { server.getAvailableChats("user") }
+        assertFailsWith<InvalidTokenException> { server.getChats("user") }
     }
 
     @Test

@@ -35,7 +35,7 @@ class WebsocketServer(private val api: Api) {
         is RegisterRequest ->
             RegisterResponse(api.register(UserCredentials(req.username, req.password)))
         is GetAvailableChatsRequest ->
-            GetAvailableChatsResponse(api.getAvailableChats(req.token))
+            GetAvailableChatsResponse(api.getChats(req.token))
         is GetPersonalChatWithRequest ->
             GetPersonalChatWithResponse(api.getPersonalChatWith(req.token, req.user))
         is CreateGroupChatRequest ->

@@ -7,7 +7,6 @@ import io.ktor.client.features.websocket.ws
 import io.ktor.http.HttpMethod
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
-import io.ktor.util.KtorExperimentalAPI
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import snailmail.core.*
@@ -62,7 +61,7 @@ class WebsocketClient(private val host: String, private val port: Int) : Api {
         return (res as RegisterResponse).result
     }
 
-    override fun getAvailableChats(token: AuthToken): List<Chat> {
+    override fun getChats(token: AuthToken): List<Chat> {
         val res = request(GetAvailableChatsRequest(token))
         return (res as GetAvailableChatsResponse).chats
     }

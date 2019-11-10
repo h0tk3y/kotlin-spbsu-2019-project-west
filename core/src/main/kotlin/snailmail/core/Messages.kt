@@ -28,7 +28,7 @@ class MediaMessage(
         date: Date,
         val sender: UUID,
         val media: Media,
-        val caption: String? = null,
+        val caption: String = "",
         val edited: Boolean = false
 ) : Message("media", id, chat, date)
 

@@ -2,7 +2,8 @@ package snailmail.server
 
 
 import snailmail.core.*
-import snailmail.core.api.*
+import snailmail.core.api.Api
+import snailmail.core.api.AuthToken
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -42,7 +43,7 @@ class Server : Api {
         return authenticate(credentials)
     }
 
-    override fun getAvailableChats(token: AuthToken): List<Chat> {
+    override fun getChats(token: AuthToken): List<Chat> {
         if (!tokenIsValid(token))
             throw InvalidTokenException()
         return this.chats.filter {
