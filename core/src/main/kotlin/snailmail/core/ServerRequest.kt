@@ -22,7 +22,7 @@ data class GetChatMessagesRequest(val token: AuthToken, val chat: UUID) : Server
 data class SendTextMessageRequest(val token: AuthToken, val text: String,
                                   val chat: UUID) : ServerRequest(ApiTransportMapping.Message.sendTextMessage.method)
 
-data class SearchByUsernameRequest(val token: AuthToken, val username: String) : ServerRequest(ApiTransportMapping.User.searchByUsername.method)
+data class GetUserByUsernameRequest(val token: AuthToken, val username: String) : ServerRequest(ApiTransportMapping.User.searchByUsername.method)
 data class GetUserByIdRequest(val token: AuthToken, val id: UUID) : ServerRequest(ApiTransportMapping.User.getUserById.method)
 
 class ServerRequestAdapter : TypeAdapter<ServerRequest> {
@@ -37,7 +37,7 @@ class ServerRequestAdapter : TypeAdapter<ServerRequest> {
         ApiTransportMapping.Message.getChatMessages.method -> GetChatMessagesRequest::class
         ApiTransportMapping.Message.sendTextMessage.method -> SendTextMessageRequest::class
 
-        ApiTransportMapping.User.searchByUsername.method -> SearchByUsernameRequest::class
+        ApiTransportMapping.User.searchByUsername.method -> GetUserByUsernameRequest::class
         ApiTransportMapping.User.getUserById.method -> GetUserByIdRequest::class
 
         else -> throw IllegalArgumentException("Unknown method: $type")

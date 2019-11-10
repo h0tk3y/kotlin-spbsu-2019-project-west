@@ -7,7 +7,6 @@ import io.ktor.client.features.websocket.ws
 import io.ktor.http.HttpMethod
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
-import io.ktor.util.KtorExperimentalAPI
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import snailmail.core.*
@@ -88,8 +87,8 @@ class WebsocketClient(private val host: String, private val port: Int) : Api {
     }
 
     override fun getUserByUsername(token: AuthToken, username: String): User? {
-        val res = request(SearchByUsernameRequest(token, username))
-        return (res as SearchByUsernameResponse).user
+        val res = request(GetUserByUsernameRequest(token, username))
+        return (res as GetUserByUsernameResponse).user
     }
 
     override fun getUserById(token: AuthToken, id: UUID): User? {

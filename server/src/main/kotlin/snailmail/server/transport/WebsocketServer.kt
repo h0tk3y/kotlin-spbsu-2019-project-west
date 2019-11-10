@@ -44,8 +44,8 @@ class WebsocketServer(private val api: Api) {
             GetChatMessagesResponse(api.getChatMessages(req.token, req.chat))
         is SendTextMessageRequest ->
             SendTextMessageResponse(api.sendTextMessage(req.token, req.text, req.chat))
-        is SearchByUsernameRequest ->
-            SearchByUsernameResponse(api.getUserByUsername(req.token, req.username))
+        is GetUserByUsernameRequest ->
+            GetUserByUsernameResponse(api.getUserByUsername(req.token, req.username))
         is GetUserByIdRequest ->
             GetUserByIdResponse(api.getUserById(req.token, req.id))
     }
@@ -149,7 +149,7 @@ class WebsocketServer(private val api: Api) {
                 get(restPath(ApiTransportMapping.User.searchByUsername.Rest)) {
                     authenticated { token ->
                         val username = call.parameters["username"] ?: throw ProtocolErrorException()
-                        handleHttpRequest(SearchByUsernameRequest(token, username))
+                        handleHttpRequest(GetUserByUsernameRequest(token, username))
                     }
                 }
             }

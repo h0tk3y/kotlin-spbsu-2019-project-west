@@ -20,7 +20,7 @@ data class CreateGroupChatResponse(val chat: GroupChat) : ServerResponse(ApiTran
 data class GetChatMessagesResponse(val messages: List<Message>) : ServerResponse(ApiTransportMapping.Message.getChatMessages.method)
 data class SendTextMessageResponse(val message: TextMessage) : ServerResponse(ApiTransportMapping.Message.sendTextMessage.method)
 
-data class SearchByUsernameResponse(val user: User?) : ServerResponse(ApiTransportMapping.User.searchByUsername.method)
+data class GetUserByUsernameResponse(val user: User?) : ServerResponse(ApiTransportMapping.User.searchByUsername.method)
 data class GetUserByIdResponse(val user: User?) : ServerResponse(ApiTransportMapping.User.getUserById.method)
 
 class ServerResponseAdapter: TypeAdapter<ServerResponse> {
@@ -35,7 +35,7 @@ class ServerResponseAdapter: TypeAdapter<ServerResponse> {
         ApiTransportMapping.Message.getChatMessages.method -> GetChatMessagesResponse::class
         ApiTransportMapping.Message.sendTextMessage.method -> SendTextMessageResponse::class
 
-        ApiTransportMapping.User.searchByUsername.method -> SearchByUsernameResponse::class
+        ApiTransportMapping.User.searchByUsername.method -> GetUserByUsernameResponse::class
         ApiTransportMapping.User.getUserById.method -> GetUserByIdResponse::class
 
         else -> throw IllegalArgumentException("Unknown method: $type")
