@@ -87,7 +87,24 @@ interface Api {
     fun createGroupChat(token: AuthToken, title: String, invitedMembers: List<UUID>): GroupChat
 
     /**
+     * Joins a group chat using specified public tag
+     * @return GroupChat on success
+     * @throws InvalidTokenException if token is wrong, expired, etc.
+     * @throws ChatDoesNotExistOrUnavailableException (also in case current user is in the blacklist)
+     */
+    fun joinGroupChatUsingPublicTag(token: AuthToken, tag: String): GroupChat
+
+    /**
+     * Joins a group chat using specified public tag
+     * @return GroupChat on success
+     * @throws InvalidTokenException if token is wrong, expired, etc.
+     * @throws ChatDoesNotExistOrUnavailableException (also in case current user is in the blacklist)
+     */
+    fun joinGroupChatUsingInviteToken(token: AuthToken, inviteToken: String): GroupChat
+
+    /**
      * Invites a user to the specified group chat
+     * Automatically removes user from blacklist if necessary
      * @return updated GroupChat
      * @throws InvalidTokenException if token is wrong, expired, etc.
      * @throws ChatDoesNotExistOrUnavailableException
