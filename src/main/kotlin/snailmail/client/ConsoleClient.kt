@@ -1,5 +1,6 @@
 package snailmail.client
 
+import com.auth0.jwt.exceptions.JWTCreationException
 import snailmail.core.GroupChat
 import snailmail.core.PersonalChat
 import snailmail.core.TextMessage
@@ -46,12 +47,18 @@ class ConsoleClient(api: API) {
             if (answer == "y") {
                 var userCredentials = getUserCredentials()
                 while (true) {
-                    val authenticationResult = client.authenticate(userCredentials)
-                    if (authenticationResult) {
-                        break
-                    } else {
-                        println("Username or/and password are incorrect")
-                        userCredentials = getUserCredentials()
+                    try {
+                        val authenticationResult = client.authenticate(userCredentials)
+                        if (authenticationResult) {
+                            break
+                        } else {
+                            println("Username or/and password are incorrect")
+                            userCredentials = getUserCredentials()
+                        }
+                    } catch (e : JWTCreationException) {
+                        println(e.message)
+                    } catch (e : Exception) {
+                        println(e.message)
                     }
                 }
                 println("Successful authentication! You can write commands!")
@@ -59,12 +66,18 @@ class ConsoleClient(api: API) {
             } else if (answer == "n") {
                 var userCredentials = getUserCredentials()
                 while (true) {
-                    val authenticationResult = client.register(userCredentials)
-                    if (authenticationResult) {
-                        break
-                    } else {
-                        println("Registration failed, try to change username")
-                        userCredentials = getUserCredentials()
+                    try {
+                        val authenticationResult = client.register(userCredentials)
+                        if (authenticationResult) {
+                            break
+                        } else {
+                            println("Registration failed, try to change username")
+                            userCredentials = getUserCredentials()
+                        }
+                    } catch (e : JWTCreationException) {
+                        println(e.message)
+                    } catch (e : Exception) {
+                        println(e.message)
                     }
                 }
                 println("Successful registration! You can write commands!")

@@ -23,10 +23,7 @@ dependencies {
     // Align versions of all Kotlin components
     implementation platform('org.jetbrains.kotlin:kotlin-bom')
 
-    // Library for JSON web tokens
-    implementation 'com.auth0:java-jwt:3.8.3'
-    implementation "io.ktor:ktor-auth:$ktor_version"
-    implementation "io.ktor:ktor-auth-jwt:$ktor_version"
+
 
     // Use the Kotlin JDK 8 standard library.
     compile 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
@@ -49,6 +46,11 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.googlecode.lanterna/lanterna
     compile "com.googlecode.lanterna:lanterna:3.0.1"
+
+    // Library for JSON web tokens
+    compile 'com.auth0:java-jwt:3.8.3'
+    compile "io.ktor:ktor-auth:$ktor_version"
+    compile "io.ktor:ktor-auth-jwt:$ktor_version"
 }
 
 jar {
