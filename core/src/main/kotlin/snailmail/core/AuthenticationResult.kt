@@ -1,8 +1,7 @@
-package snailmail.core.api
+package snailmail.core
 
 import com.beust.klaxon.TypeAdapter
 import com.beust.klaxon.TypeFor
-import snailmail.core.ServerRequestAdapter
 import java.lang.IllegalArgumentException
 import kotlin.reflect.KClass
 

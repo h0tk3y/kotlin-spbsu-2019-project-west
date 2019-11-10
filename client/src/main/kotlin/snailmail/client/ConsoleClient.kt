@@ -4,7 +4,7 @@ import snailmail.core.GroupChat
 import snailmail.core.PersonalChat
 import snailmail.core.TextMessage
 import snailmail.core.UserCredentials
-import snailmail.core.api.Api
+import snailmail.core.Api
 
 class ConsoleClient(api: Api) {
     private val client = Client(api)

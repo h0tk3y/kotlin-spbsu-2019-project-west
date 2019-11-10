@@ -6,5 +6,4 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
-    implementation("com.beust:klaxon:5.0.13")
 }

@@ -2,7 +2,6 @@ package snailmail.server
 
 
 import snailmail.core.*
-import snailmail.core.api.*
 import java.util.*
 import kotlin.collections.HashMap
 
