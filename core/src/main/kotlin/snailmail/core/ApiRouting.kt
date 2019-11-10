@@ -5,7 +5,7 @@ object ApiRouting {
 
     val authenticate = Mapping("POST", "/users/authenticate", false)
     val register = Mapping("POST", "/users/register", false)
-    val getAvailableChats = Mapping("GET", "/chats")
+    val getChats = Mapping("GET", "/chats")
     val getPersonalChatWith = Mapping("GET", "/chats/personal/{user}")
     val createGroupChat = Mapping("POST", "/chats/group")
     val getChatMessages = Mapping("GET", "/chats/{chat}/messages")

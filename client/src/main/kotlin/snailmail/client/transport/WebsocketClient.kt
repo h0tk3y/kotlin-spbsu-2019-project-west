@@ -61,9 +61,9 @@ class WebsocketClient(private val host: String, private val port: Int) : Api {
         return (res as RegisterResponse).result
     }
 
-    override fun getAvailableChats(token: AuthToken): List<Chat> {
-        val res = request(GetAvailableChatsRequest(token))
-        return (res as GetAvailableChatsResponse).chats
+    override fun getChats(token: AuthToken): List<Chat> {
+        val res = request(GetChatsRequest(token))
+        return (res as GetChatsResponse).chats
     }
 
     override fun getPersonalChatWith(token: AuthToken, user: UUID): PersonalChat {

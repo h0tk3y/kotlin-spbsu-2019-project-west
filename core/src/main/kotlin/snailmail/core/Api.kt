@@ -5,7 +5,7 @@ import java.util.*
 interface Api {
     fun authenticate(credentials: UserCredentials): AuthToken
     fun register(credentials: UserCredentials): AuthToken
-    fun getAvailableChats(token: AuthToken): List<Chat>
+    fun getChats(token: AuthToken): List<Chat>
     fun getPersonalChatWith(token: AuthToken, user: UUID): PersonalChat
     fun createGroupChat(token: AuthToken, title: String, invitedMembers: List<UUID>): GroupChat
     fun getChatMessages(token: AuthToken, chat: UUID): List<Message>

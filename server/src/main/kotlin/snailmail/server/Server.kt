@@ -1,34 +1,39 @@
 package snailmail.server
 
 
+import com.auth0.jwt.exceptions.JWTVerificationException
 import snailmail.core.*
 import java.util.*
 import kotlin.collections.HashMap
 
-class Server : Api {
+class Server(private val secretKey: String) : Api {
+    private val simpleJwt = SimpleJwt(secretKey)
     private var userCredentials = HashMap<String, String>()
-    var chats = mutableListOf<Chat>()
+    private var chats = mutableListOf<Chat>()
     private var userByUsername = HashMap<String, User>()
     private var userById = HashMap<UUID, User>()
-    var userIdByToken = HashMap<String, UUID>()
-    var messagesByChatId = HashMap<UUID, MutableList<Message>>()
+    private var messagesByChatId = HashMap<UUID, MutableList<Message>>()
     private var chatByChatId = HashMap<UUID, Chat>()
 
-    private fun tokenIsValid(token: AuthToken): Boolean {
-        return (userIdByToken[token] != null)
+    private fun getUserIdFromToken(token: AuthToken): UUID {
+        try {
+            return UUID.fromString(simpleJwt.verifier.verify(token).getClaim("id").toString())
+        } catch (e: JWTVerificationException) {
+            throw InvalidTokenException()
+        }
     }
+
+    private fun generateToken(userId: UUID): AuthToken = simpleJwt.sign(userId)
 
     override fun authenticate(credentials: UserCredentials): AuthToken {
         val username = credentials.username
         val password = credentials.passwordHash
         if (!userCredentials.contains(username) || userCredentials[username] != password)
             throw WrongCredentialsException()
-        else {
-            val token = username
-            userIdByToken[token] = userByUsername[username]?.id
-                    ?: throw InternalServerErrorException("Successful authentication, but user doesn't exist.")
-            return token
-        }
+
+        val userId = userByUsername[username]?.id
+                ?: throw InternalServerErrorException("Successful authentication, but user doesn't exist.")
+        return generateToken(userId)
     }
 
     override fun register(credentials: UserCredentials): AuthToken {
@@ -41,34 +46,25 @@ class Server : Api {
         return authenticate(credentials)
     }
 
-    override fun getAvailableChats(token: AuthToken): List<Chat> {
-        if (!tokenIsValid(token))
-            throw InvalidTokenException()
+    override fun getChats(token: AuthToken): List<Chat> {
+        val userId = getUserIdFromToken(token)
         return this.chats.filter {
-            it.hasMember(
-                    userIdByToken[token]
-                            ?: throw InternalServerErrorException("Token is valid, but user doesn't exist.")
-            )
+            it.hasMember(userId)
         }
     }
 
     override fun getPersonalChatWith(token: AuthToken, user: UUID): PersonalChat {
-        if (!tokenIsValid(token))
-            throw InvalidTokenException()
+        val userId = getUserIdFromToken(token)
         val res = chats.find {
             when (it) {
-                is PersonalChat -> it.hasMember(
-                        userIdByToken[token]
-                                ?: throw InternalServerErrorException("Token is valid, but user doesn't exist.")
-                )
+                is PersonalChat -> it.hasMember(getUserIdFromToken(token))
                         && it.hasMember(user)
                 else -> false
             }
         }
         if (res == null) {
             val chat = PersonalChat(
-                    UUID.randomUUID(), userIdByToken[token]
-                    ?: throw InternalServerErrorException("Token is valid, but user doesn't exist."), user
+                    UUID.randomUUID(), userId, user
             )
             chats.add(chat)
             messagesByChatId[chat.id] = mutableListOf()
@@ -79,31 +75,22 @@ class Server : Api {
     }
 
     override fun getChatMessages(token: AuthToken, chat: UUID): List<Message> {
-        if (!tokenIsValid(token))
-            throw InvalidTokenException()
-        val currentChat = chatByChatId[chat]
-        if (currentChat == null)
-            throw InvalidChatIdException()
-        else if (!currentChat.hasMember(
-                        userIdByToken[token]
-                                ?: throw InternalServerErrorException("Token is valid, but user doesn't exist.")
-                )
-        )
+        val userId = getUserIdFromToken(token)
+        val currentChat = chatByChatId[chat] ?: throw InvalidChatIdException()
+        if (!currentChat.hasMember(userId))
             throw UserIsNotMemberException()
         return messagesByChatId[chat]
                 ?: throw InternalServerErrorException("Сhat exists, but his history doesn't exist.")
     }
 
     override fun sendTextMessage(token: AuthToken, text: String, chat: UUID): TextMessage {
-        if (!tokenIsValid(token))
-            throw InvalidTokenException()
+        val userId = getUserIdFromToken(token)
         val date: Date = Calendar.getInstance().run {
             time
         }
         val msg = TextMessage(
                 id = UUID.randomUUID(), chat = chat,
-                sender = userIdByToken[token]
-                        ?: throw InternalServerErrorException("Token is valid, but user doesn't exist."),
+                sender = userId,
                 content = text, date = date
         )
         messagesByChatId[chat]?.add(msg)
@@ -112,11 +99,9 @@ class Server : Api {
     }
 
     override fun createGroupChat(token: AuthToken, title: String, invitedMembers: List<UUID>): GroupChat {
-        if (!tokenIsValid(token))
-            throw InvalidTokenException()
+        val userId = getUserIdFromToken(token)
         val chat = GroupChat(
-                UUID.randomUUID(), title, userIdByToken[token]
-                ?: throw InternalServerErrorException("Token is valid, but user doesn't exist."),
+                UUID.randomUUID(), title, userId,
                 invitedMembers
         )
         chats.add(chat)
@@ -126,14 +111,12 @@ class Server : Api {
     }
 
     override fun getUserByUsername(token: AuthToken, username: String): User? {
-        if (!tokenIsValid(token))
-            throw InvalidTokenException()
+        val userId = getUserIdFromToken(token)
         return userByUsername[username]
     }
 
     override fun getUserById(token: AuthToken, id: UUID): User? {
-        if (!tokenIsValid(token))
-            throw InvalidTokenException()
+        val userId = getUserIdFromToken(token)
         return userById[id]
     }
 }
