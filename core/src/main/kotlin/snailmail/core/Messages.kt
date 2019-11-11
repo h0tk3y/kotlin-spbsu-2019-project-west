@@ -1,17 +1,25 @@
 package snailmail.core
 
-import com.beust.klaxon.TypeAdapter
-import com.beust.klaxon.TypeFor
+import com.fasterxml.jackson.annotation.JsonCreator
 import java.util.*
 import kotlin.reflect.KClass
 
-@TypeFor(field = "type", adapter = MessageAdapter::class)
 sealed class Message(
         val type: String,
         val id: UUID,
         val chat: UUID,
         val date: Date
-)
+) {
+    private companion object {
+        @JsonCreator
+        @JvmStatic
+        fun findBySimpleName(simpleName: String): Message? {
+            return Message::class.sealedSubclasses.first {
+                it.simpleName == simpleName
+            }.objectInstance
+        }
+    }
+}
 
 class TextMessage(
         id: UUID,
@@ -89,18 +97,3 @@ class GroupChatCreatedMessage(
         chat: UUID,
         date: Date
 ) : ServiceMessage("service.groupChatCreated", id, chat, date)
-
-class MessageAdapter : TypeAdapter<Message> {
-    override fun classFor(type: Any): KClass<out Message> = when (type as String) {
-        "text" -> TextMessage::class
-        "media" -> MediaMessage::class
-        "deleted" -> DeletedMessage::class
-        "service.userJoined" -> UserJoinedMessage::class
-        "service.userJoinedByToken" -> UserJoinedByInvitationalTokenMessage::class
-        "service.userInvited" -> UserInvitedMessage::class
-        "service.userLeft" -> UserLeftMessage::class
-        "service.titleChanged" -> TitleChangedMessage::class
-        "service.groupChatCreated" -> GroupChatCreatedMessage::class
-        else -> throw IllegalArgumentException("Unknown message type: $type")
-    }
-}

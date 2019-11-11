@@ -1,8 +1,8 @@
 package snailmail.client
 
 import snailmail.core.*
-import snailmail.core.api.Api
-import snailmail.core.api.AuthToken
+import snailmail.core.Api
+import snailmail.core.AuthToken
 import java.util.*
 
 class Client(private val api: Api) {

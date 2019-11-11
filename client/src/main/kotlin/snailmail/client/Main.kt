@@ -6,7 +6,7 @@ import com.xenomachina.argparser.mainBody
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import snailmail.client.lanterna.LanternaClient
-import snailmail.client.transport.WebsocketClient
+import snailmail.client.transport.RestHttpClient
 
 class ClientArgs(parser: ArgParser) {
     val gui by parser.flagging("Use expiremental GUI")
@@ -16,12 +16,11 @@ class ClientArgs(parser: ArgParser) {
 
 fun main(args: Array<String>) = mainBody {
     ArgParser(args).parseInto(::ClientArgs).run {
-        val wsClient = WebsocketClient(host, port)
-        GlobalScope.launch { wsClient.run() }
+        val httpClient = RestHttpClient(host, port)
         if (gui) {
-            LanternaClient(wsClient).run()
+            LanternaClient(httpClient).run()
         } else {
-            ConsoleClient(wsClient).run()
+            ConsoleClient(httpClient).run()
         }
     }
 }

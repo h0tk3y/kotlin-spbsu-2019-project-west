@@ -124,7 +124,11 @@ class ServerTest {
                 val correctAvailableChats = listOf("B", "C", "D").map {
                     server.getPersonalChatWith("A", server.getUserByUsername("A", it)!!.id)
                 }
+<<<<<<< HEAD
             assertEquals(correctAvailableChats, server.getChats("A"))
+=======
+                assertEquals(correctAvailableChats, server.getChats("A"))
+>>>>>>> 095dc16988d2986969c27e254efde0209404ba59
         }
     }
 
@@ -229,7 +233,11 @@ class ServerTest {
                 }
                 val chatABCD = server.createGroupChat("A", "", members)
                 val correctAvailableChats = chats + chatABCD
+<<<<<<< HEAD
             assertEquals(correctAvailableChats, server.getChats("A"))
+=======
+                assertEquals(correctAvailableChats, server.getChats("A"))
+>>>>>>> 095dc16988d2986969c27e254efde0209404ba59
         }
     }
 

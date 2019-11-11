@@ -11,9 +11,11 @@ dependencies {
     testImplementation(kotlin("test-junit"))
 
     implementation("io.ktor:ktor-server-netty:$ktor_version")
-    implementation("io.ktor:ktor-websockets:$ktor_version")
-    implementation("com.beust:klaxon:5.0.13")
+    implementation("io.ktor:ktor-jackson:$ktor_version")
+    implementation("io.ktor:ktor-auth:$ktor_version")
+    implementation("io.ktor:ktor-auth-jwt:$ktor_version")
     implementation("com.xenomachina:kotlin-argparser:2.0.7")
+    implementation("ch.qos.logback:logback-classic:1.2.3")
 
     implementation(project(":core"))
     testImplementation(project(":client"))

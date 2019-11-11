@@ -8,7 +8,7 @@ import com.googlecode.lanterna.screen.TerminalScreen
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory
 import com.googlecode.lanterna.terminal.Terminal
 import snailmail.client.Client
-import snailmail.core.api.Api
+import snailmail.core.Api
 
 class LanternaClient(api: Api) {
     val client = Client(api)

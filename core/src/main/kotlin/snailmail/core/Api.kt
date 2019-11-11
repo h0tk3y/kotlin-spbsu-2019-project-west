@@ -1,10 +1,6 @@
-package snailmail.core.api
+package snailmail.core
 
-import snailmail.core.*
 import java.util.*
-
-// TODO: make endpoints more accurate!
-// TODO: write more docs!
 
 /**
  * API specification
@@ -21,7 +17,6 @@ interface Api {
      * @return AuthToken on success
      * @throws UnavailableUsernameException if username is already taken by someone else
      */
-    @Endpoint("/users/register", "POST")
     fun register(credentials: UserCredentials): AuthToken
 
     /**
@@ -29,7 +24,6 @@ interface Api {
      * @return AuthToken
      * @throws WrongCredentialsException if there is no user with such credentials (or the password is wrong)
      */
-    @Endpoint("/users/authenticate", "POST")
     fun authenticate(credentials: UserCredentials): AuthToken
 
     /**
@@ -48,7 +42,6 @@ interface Api {
      * @return List of chats
      * @throws InvalidTokenException if token is wrong, expired, etc.
      */
-    @Endpoint("/chats", "GET")
     fun getChats(token: AuthToken): List<Chat>
 
     /**
@@ -57,7 +50,6 @@ interface Api {
      * @throws InvalidTokenException if token is wrong, expired, etc.
      * @throws ChatDoesNotExistOrUnavailableException if there is no such chat (or it is unavailable to the user)
      */
-    @Endpoint("/chats/id/{chat}", "GET")
     fun getChatById(token: AuthToken, chat: UUID): Chat
 
     // Chats.Personal
@@ -69,7 +61,6 @@ interface Api {
      * @throws InvalidTokenException if token is wrong, expired, etc.
      * @throws UserDoesNotExistException if specified user id is wrong
      */
-    @Endpoint("/chats/personal/{user}", "GET")
     fun getPersonalChatWith(token: AuthToken, user: UUID): PersonalChat
 
     // Chats.Group
@@ -83,7 +74,6 @@ interface Api {
      * @throws InvalidTokenException if token is wrong, expired, etc.
      * @throws ProtocolErrorException with description if the contract on params is not fulfilled
      */
-    @Endpoint("/chats/group", "POST")
     fun createGroupChat(token: AuthToken, title: String, invitedMembers: List<UUID>): GroupChat
 
     /**
@@ -243,7 +233,6 @@ interface Api {
      * @throws InvalidTokenException if token is wrong, expired, etc.
      * @throws ChatDoesNotExistOrUnavailableException
      */
-    @Endpoint("/chats/{chat}/messages", "GET")
     fun getChatMessages(token: AuthToken, chat: UUID): List<Message>
 
     /**
@@ -262,7 +251,6 @@ interface Api {
      * @throws ChatDoesNotExistOrUnavailableException (or in case the target user banned us or vice versa)
      * @throws ProtocolErrorException if text is empty
      */
-    @Endpoint("/chats/{chat}/messages", "POST")
     fun sendTextMessage(token: AuthToken, text: String, chat: UUID): TextMessage
 
     /**
@@ -301,7 +289,6 @@ interface Api {
      * @throws InvalidTokenException if token is wrong, expired, etc.
      * @throws UserDoesNotExistException
      */
-    @Endpoint("/users/username/{username}", "GET")
     fun getUserByUsername(token: AuthToken, username: String): User
 
     /**
@@ -310,7 +297,6 @@ interface Api {
      * @throws InvalidTokenException if token is wrong, expired, etc.
      * @throws UserDoesNotExistException
      */
-    @Endpoint("/users/id/{id}", "GET")
     fun getUserById(token: AuthToken, user: UUID): User
 
     // Contacts

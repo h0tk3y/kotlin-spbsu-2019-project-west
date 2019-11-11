@@ -1,13 +1,20 @@
 package snailmail.core
 
-import com.beust.klaxon.TypeAdapter
-import com.beust.klaxon.TypeFor
+import com.fasterxml.jackson.annotation.JsonCreator
 import java.util.*
 import kotlin.reflect.KClass
 
-@TypeFor(field = "type", adapter = ChatAdapter::class)
 sealed class Chat(val type: String, val id: UUID) {
     abstract fun hasMember(user: UUID): Boolean
+    private companion object {
+        @JsonCreator
+        @JvmStatic
+        fun findBySimpleName(simpleName: String): Chat? {
+            return Chat::class.sealedSubclasses.first {
+                it.simpleName == simpleName
+            }.objectInstance
+        }
+    }
 }
 
 class PersonalChat(
@@ -36,13 +43,5 @@ class GroupChat(id: UUID,
 ) : Chat("group", id) {
     override fun hasMember(user: UUID): Boolean {
         return owner == user || members.contains(user)
-    }
-}
-
-class ChatAdapter : TypeAdapter<Chat> {
-    override fun classFor(type: Any): KClass<out Chat> = when (type as String) {
-        "personal" -> PersonalChat::class
-        "group" -> GroupChat::class
-        else -> throw IllegalArgumentException("Illegal chat type: $type")
     }
 }
