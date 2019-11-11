@@ -1,15 +1,22 @@
 package snailmail.core
 
-import com.beust.klaxon.TypeAdapter
-import com.beust.klaxon.TypeFor
+import com.fasterxml.jackson.annotation.JsonCreator
 import java.lang.IllegalArgumentException
 import kotlin.reflect.KClass
 
 typealias AuthToken = String
 
-@TypeFor(field = "status", adapter = AuthenticationResultAdapter::class)
 sealed class AuthenticationResult(val status: String) {
     abstract val successful: Boolean
+    private companion object {
+        @JsonCreator
+        @JvmStatic
+        fun findBySimpleName(simpleName: String): AuthenticationResult? {
+            return AuthenticationResult::class.sealedSubclasses.first {
+                it.simpleName == simpleName
+            }.objectInstance
+        }
+    }
 }
 
 class AuthSuccessful(val token: AuthToken) : AuthenticationResult("successful") {
@@ -30,15 +37,4 @@ class AuthRegisterFailed(val message: String) : AuthenticationResult("registerFa
 class AuthError : AuthenticationResult("error") {
     override val successful: Boolean
         get() = false
-}
-
-
-class AuthenticationResultAdapter: TypeAdapter<AuthenticationResult> {
-    override fun classFor(type: Any): KClass<out AuthenticationResult> = when (type as String) {
-        "successful" -> AuthSuccessful::class
-        "wrongCredentials" -> AuthWrongCredentials::class
-        "registerFailed" -> AuthRegisterFailed::class
-        "error" -> AuthError::class
-        else -> throw IllegalArgumentException("Invalid AuthenticationResult status: $type")
-    }
 }

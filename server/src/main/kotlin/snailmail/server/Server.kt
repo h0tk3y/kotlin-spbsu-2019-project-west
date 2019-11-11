@@ -6,7 +6,7 @@ import snailmail.core.*
 import java.util.*
 import kotlin.collections.HashMap
 
-class Server(private val secretKey: String) : Api {
+class Server(private val secretKey: String = "secret") : Api {
     private val simpleJwt = SimpleJwt(secretKey)
     private var userCredentials = HashMap<String, String>()
     private var chats = mutableListOf<Chat>()
@@ -27,7 +27,7 @@ class Server(private val secretKey: String) : Api {
 
     override fun authenticate(credentials: UserCredentials): AuthToken {
         val username = credentials.username
-        val password = credentials.passwordHash
+        val password = credentials.password
         if (!userCredentials.contains(username) || userCredentials[username] != password)
             throw WrongCredentialsException()
 
@@ -40,7 +40,7 @@ class Server(private val secretKey: String) : Api {
         if (userCredentials.contains(credentials.username))
             throw UnavailableUsernameException()
         val user = User(UUID.randomUUID(), credentials.username, credentials.username)
-        userCredentials[credentials.username] = credentials.passwordHash
+        userCredentials[credentials.username] = credentials.password
         userByUsername[credentials.username] = user
         userById[user.id] = user
         return authenticate(credentials)

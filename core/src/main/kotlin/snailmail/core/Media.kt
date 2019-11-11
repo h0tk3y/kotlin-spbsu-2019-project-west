@@ -2,13 +2,21 @@
 
 package snailmail.core
 
-import com.beust.klaxon.TypeAdapter
-import com.beust.klaxon.TypeFor
+import com.fasterxml.jackson.annotation.JsonCreator
 import java.util.*
 import kotlin.reflect.KClass
 
-@TypeFor(field = "type", adapter = MediaAdapter::class)
-sealed class Media(val type: String)
+sealed class Media(val type: String) {
+    private companion object {
+        @JsonCreator
+        @JvmStatic
+        fun findBySimpleName(simpleName: String): Media? {
+            return Media::class.sealedSubclasses.first {
+                it.simpleName == simpleName
+            }.objectInstance
+        }
+    }
+}
 
 class Photo(
         val photo: UUID,
@@ -21,11 +29,3 @@ class File(
         val size: ULong,
         val filename: String
 ) : Media("file")
-
-class MediaAdapter : TypeAdapter<Media> {
-    override fun classFor(type: Any): KClass<out Media> = when (type as String) {
-        "photo" -> Photo::class
-        "file" -> File::class
-        else -> throw IllegalArgumentException("Unknown media type: $type")
-    }
-}
