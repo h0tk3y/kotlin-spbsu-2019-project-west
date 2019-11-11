@@ -18,12 +18,12 @@ class Client(private val api: Api) {
 
     fun findUser(username: String): User {
         val authToken = acquireToken()
-        return api.getUserByUsername(authToken, username) ?: throw UserNotFoundException("This user doesn't exist")
+        return api.getUserByUsername(authToken, username)
     }
 
     fun findUserById(id: UUID): User {
         val authToken = acquireToken()
-        return api.getUserById(authToken, id) ?: throw UserNotFoundException("This user doesn't exist")
+        return api.getUserById(authToken, id)
     }
 
     fun sendMessage(username: String, message: String): TextMessage {

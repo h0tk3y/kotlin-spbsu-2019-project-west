@@ -243,12 +243,12 @@ class Server(private val secretKey: String = "secret") : Api {
     }
 
     override fun getUserByUsername(token: AuthToken, username: String): User {
-        val userId = getUserIdFromToken(token)
+        getUserIdFromToken(token)
         return userByUsername[username] ?: throw UserDoesNotExistException()
     }
 
-    override fun getUserById(token: AuthToken, id: UUID): User {
-        val userId = getUserIdFromToken(token)
-        return userById[id] ?: throw UserDoesNotExistException()
+    override fun getUserById(token: AuthToken, user: UUID): User {
+        getUserIdFromToken(token)
+        return userById[user] ?: throw UserDoesNotExistException()
     }
 }
