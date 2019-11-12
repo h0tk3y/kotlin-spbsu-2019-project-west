@@ -7,9 +7,10 @@ import snailmail.client.Client
 import snailmail.core.TextMessage
 import snailmail.core.UserCredentials
 import snailmail.server.Server
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
-class ClientServerTest {
+internal class ClientServerTest {
     @Test
     fun `client-server simple integrity test`() {
         val server = Server()

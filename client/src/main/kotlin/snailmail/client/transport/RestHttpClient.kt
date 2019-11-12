@@ -6,11 +6,10 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.client.HttpClient
 import io.ktor.client.features.json.JacksonSerializer
 import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import kotlinx.coroutines.runBlocking
 import snailmail.core.*
-import snailmail.core.Api
-import snailmail.core.AuthToken
 import java.util.*
 
 class RestHttpClient(private val host: String, private val port: Int) : Api {
@@ -172,12 +171,16 @@ class RestHttpClient(private val host: String, private val port: Int) : Api {
         readResponse<AuthenticateResponse>(json).result
     }
 
-    override fun register(credentials: UserCredentials): AuthToken {
-        TODO()
+    override fun register(credentials: UserCredentials): AuthToken = runBlocking {
+        val json = client.post<String>("$serverUrl/users/register") {
+            body = RegisterRequest(credentials.username, credentials.password)
+        }
+        readResponse<RegisterResponse>(json).result
     }
 
-    override fun getChats(token: AuthToken): List<Chat> {
-        TODO()
+    override fun getChats(token: AuthToken): List<Chat> = runBlocking {
+        val json = client.get<String>("$serverUrl/chats")
+        readResponse<GetChatsResponse>(json).chats
     }
 
     override fun getPersonalChatWith(token: AuthToken, user: UUID): PersonalChat {

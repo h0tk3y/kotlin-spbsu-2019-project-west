@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
-class ServerTest {
+internal class ServerTest {
     private fun generateServerWithTwoUsers(block: (Server) -> Unit) {
         val server = Server().apply {
             register(UserCredentials("A", "aaaaa"))
@@ -62,8 +62,8 @@ class ServerTest {
     fun `search for existing users`() {
         generateServerWithFourUsers {
             server ->
-                assertEquals("B", server.getUserByUsername("A", "B")!!.username)
-                assertEquals("A", server.getUserByUsername("B", "A")!!.username)
+            assertEquals("B", server.getUserByUsername("A", "B").username)
+            assertEquals("A", server.getUserByUsername("B", "A").username)
         }
     }
 
@@ -80,9 +80,9 @@ class ServerTest {
     fun `personal chat contains its members`() {
         generateServerWithTwoUsers {
             server ->
-                val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B")!!.id)
-                assert(chat.hasMember(server.getUserByUsername("A", "A")!!.id))
-                assert(chat.hasMember(server.getUserByUsername("B", "B")!!.id))
+            val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B").id)
+            assert(chat.hasMember(server.getUserByUsername("A", "A").id))
+            assert(chat.hasMember(server.getUserByUsername("B", "B").id))
         }
     }
 
@@ -90,8 +90,8 @@ class ServerTest {
     fun `identity of personal chats with the same user`() {
         generateServerWithTwoUsers {
             server ->
-                val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B")!!.id)
-                val chatDuplicate = server.getPersonalChatWith("A", server.getUserByUsername("A", "B")!!.id)
+            val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B").id)
+            val chatDuplicate = server.getPersonalChatWith("A", server.getUserByUsername("A", "B").id)
                 assertEquals(chat, chatDuplicate)
         }
     }
@@ -102,10 +102,10 @@ class ServerTest {
 
         server.register(UserCredentials("user", "00000"))
 
-        val chat = server.getPersonalChatWith("user", server.getUserByUsername("user", "user")!!.id)
+        val chat = server.getPersonalChatWith("user", server.getUserByUsername("user", "user").id)
 
-        assertEquals(server.getUserByUsername("user", "user")!!.id, chat.person1)
-        assertEquals(server.getUserByUsername("user", "user")!!.id, chat.person2)
+        assertEquals(server.getUserByUsername("user", "user").id, chat.person1)
+        assertEquals(server.getUserByUsername("user", "user").id, chat.person2)
     }
 
     @Test
@@ -119,16 +119,12 @@ class ServerTest {
 
     @Test
     fun `3 available chats`() {
-        generateServerWithFourUsers {
-            server ->
-                val correctAvailableChats = listOf("B", "C", "D").map {
-                    server.getPersonalChatWith("A", server.getUserByUsername("A", it)!!.id)
-                }
-<<<<<<< HEAD
+        generateServerWithFourUsers { server ->
+            val correctAvailableChats = listOf("B", "C", "D").map {
+                server.getPersonalChatWith("A", server.getUserByUsername("A", it).id)
+            }
+
             assertEquals(correctAvailableChats, server.getChats("A"))
-=======
-                assertEquals(correctAvailableChats, server.getChats("A"))
->>>>>>> 095dc16988d2986969c27e254efde0209404ba59
         }
     }
 
@@ -136,7 +132,7 @@ class ServerTest {
     fun `sending a message to another user`() {
         generateServerWithTwoUsers {
             server ->
-                val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B")!!.id)
+            val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B").id)
                 val message = server.sendTextMessage("A", "<3", chat.id)
                 assertEquals("<3", message.content)
         }
@@ -148,7 +144,7 @@ class ServerTest {
 
         server.register(UserCredentials("user", "abacaba"))
 
-        val chat = server.getPersonalChatWith("user", server.getUserByUsername("user", "user")!!.id)
+        val chat = server.getPersonalChatWith("user", server.getUserByUsername("user", "user").id)
         val message = server.sendTextMessage("user", "odna krov' odna dusha odno sp", chat.id)
 
         assertEquals("odna krov' odna dusha odno sp", message.content)
@@ -158,7 +154,7 @@ class ServerTest {
     fun `no messages in personal chat`() {
         generateServerWithTwoUsers {
             server ->
-                val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B")!!.id)
+            val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B").id)
                 assert(server.getChatMessages("A", chat.id).isEmpty())
                 assert(server.getChatMessages("B", chat.id).isEmpty())
         }
@@ -168,7 +164,7 @@ class ServerTest {
     fun `messages from personal chat`() {
         generateServerWithTwoUsers {
             server ->
-                val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B")!!.id)
+            val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B").id)
                 with(server) {
                     sendTextMessage("A", "h e l l o", chat.id)
                     sendTextMessage("B", "#__#", chat.id)
@@ -187,7 +183,7 @@ class ServerTest {
 
         server.register(UserCredentials("user", "abacaba"))
 
-        val chat = server.getPersonalChatWith("user", server.getUserByUsername("user", "user")!!.id)
+        val chat = server.getPersonalChatWith("user", server.getUserByUsername("user", "user").id)
         server.sendTextMessage("user", "_____", chat.id)
 
         assertEquals(1, server.getChatMessages("user", chat.id).size)
@@ -200,10 +196,10 @@ class ServerTest {
         generateServerWithFourUsers {
                 server ->
                 val members = listOf("B", "C", "D").map {
-                    server.getUserByUsername("A", it)!!.id
+                    server.getUserByUsername("A", it).id
                 }
                 val groupChat = server.createGroupChat("A", "", members)
-                assertEquals(server.getUserByUsername("A", "A")!!.id, groupChat.owner)
+            assertEquals(server.getUserByUsername("A", "A").id, groupChat.owner)
                 assertEquals(members, groupChat.members)
         }
     }
@@ -214,30 +210,26 @@ class ServerTest {
 
         server.register(UserCredentials("user", "abacaba"))
 
-        val members = listOf(server.getUserByUsername("user", "user")!!.id)
+        val members = listOf(server.getUserByUsername("user", "user").id)
         val groupChat = server.createGroupChat("user", "", members)
 
-        assertEquals(server.getUserByUsername("user", "user")!!.id, groupChat.owner)
+        assertEquals(server.getUserByUsername("user", "user").id, groupChat.owner)
         assertEquals(members, groupChat.members)
     }
 
     @Test
     fun `getting available chats with group chat`() {
-        generateServerWithFourUsers {
-            server ->
-                val chats = listOf("B", "C", "D").map {
-                    server.getPersonalChatWith("A", server.getUserByUsername("A", it)!!.id)
-                }
-                val members = listOf("B", "C", "D").map {
-                    server.getUserByUsername("A", it)!!.id
-                }
-                val chatABCD = server.createGroupChat("A", "", members)
-                val correctAvailableChats = chats + chatABCD
-<<<<<<< HEAD
+        generateServerWithFourUsers { server ->
+            val chats = listOf("B", "C", "D").map {
+                server.getPersonalChatWith("A", server.getUserByUsername("A", it).id)
+            }
+            val members = listOf("B", "C", "D").map {
+                server.getUserByUsername("A", it).id
+            }
+            val chatABCD = server.createGroupChat("A", "", members)
+            val correctAvailableChats = chats + chatABCD
+
             assertEquals(correctAvailableChats, server.getChats("A"))
-=======
-                assertEquals(correctAvailableChats, server.getChats("A"))
->>>>>>> 095dc16988d2986969c27e254efde0209404ba59
         }
     }
 
@@ -250,7 +242,7 @@ class ServerTest {
 
         }
 
-        val chat = server.getPersonalChatWith("alice", server.getUserByUsername("alice", "bob")!!.id)
+        val chat = server.getPersonalChatWith("alice", server.getUserByUsername("alice", "bob").id)
 
         assertFailsWith<UserIsNotMemberException> { server.getChatMessages("eve", chat.id) }
     }
@@ -276,7 +268,7 @@ class ServerTest {
         val server = Server()
 
         server.register(UserCredentials("userRegistered", "abacaba"))
-        val userRegistered = server.getUserByUsername("userRegistered", "userRegistered")!!
+        val userRegistered = server.getUserByUsername("userRegistered", "userRegistered")
 
         assertFailsWith<InvalidTokenException> { server.getPersonalChatWith("user", userRegistered.id) }
     }
@@ -285,7 +277,7 @@ class ServerTest {
     fun `sending message with invalid token results in an exception`() {
         generateServerWithTwoUsers {
             server ->
-                val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B")!!.id)
+            val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B").id)
                 assertFailsWith<InvalidTokenException> { server.sendTextMessage("C", "_", chat.id) }
         }
     }
@@ -294,7 +286,7 @@ class ServerTest {
     fun `getting messages from personal chat with invalid token results in an exception`() {
         generateServerWithTwoUsers {
             server ->
-                val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B")!!.id)
+            val chat = server.getPersonalChatWith("A", server.getUserByUsername("A", "B").id)
                 assertFailsWith<InvalidTokenException> { server.getChatMessages("C", chat.id) }
         }
     }
@@ -303,8 +295,8 @@ class ServerTest {
     fun `creating group chat with invalid token results in an exception`() {
         generateServerWithTwoUsers {
             server ->
-                val userA = server.getUserByUsername("A", "A")!!
-                val userB = server.getUserByUsername("B", "B")!!
+            val userA = server.getUserByUsername("A", "A")
+            val userB = server.getUserByUsername("B", "B")
                 val members = listOf(userA.id, userB.id)
                 assertFailsWith<InvalidTokenException> { server.createGroupChat("C", "", members) }
         }

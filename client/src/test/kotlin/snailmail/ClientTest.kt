@@ -10,7 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-class ClientTest {
+internal class ClientTest {
     private fun generateTwoUsers(block: (userA: Client, userB: Client) -> Unit) {
         val server = Server()
         val userA = Client(server)

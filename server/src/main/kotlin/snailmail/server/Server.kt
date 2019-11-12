@@ -160,6 +160,10 @@ class Server(private val secretKey: String = "secret") : Api {
     override fun authenticate(credentials: UserCredentials): AuthToken {
         val username = credentials.username
         val password = credentials.password
+
+        if (username.isEmpty() || password.isEmpty())
+            throw ProtocolErrorException()
+
         if (!userCredentials.contains(username) || userCredentials[username] != password)
             throw WrongCredentialsException()
 
@@ -169,11 +173,15 @@ class Server(private val secretKey: String = "secret") : Api {
     }
 
     override fun register(credentials: UserCredentials): AuthToken {
-        if (userCredentials.contains(credentials.username))
+        val username = credentials.username
+        val password = credentials.password
+        if (username.isEmpty() || password.isEmpty())
+            throw ProtocolErrorException()
+        if (userCredentials.contains(username))
             throw UnavailableUsernameException()
-        val user = User(UUID.randomUUID(), credentials.username, credentials.username)
-        userCredentials[credentials.username] = credentials.password
-        userByUsername[credentials.username] = user
+        val user = User(UUID.randomUUID(), username, username)
+        userCredentials[username] = password
+        userByUsername[username] = user
         userById[user.id] = user
         return authenticate(credentials)
     }

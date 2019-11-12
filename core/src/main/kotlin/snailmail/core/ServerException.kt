@@ -1,7 +1,15 @@
 package snailmail.core
 
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.*
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import kotlin.reflect.full.primaryConstructor
 
+@JsonSerialize(using = ServerExceptionSerializer::class)
+@JsonDeserialize(using = ServerExceptionDeserializer::class)
 sealed class ServerException(val error: String) : Exception(error) {
     private companion object {
         @JsonCreator
@@ -28,3 +36,31 @@ class MessageDoesNotExistException : ServerException("Message does not exist")
 class OperationFailedException(message: String = "Operation failed") : ServerException(message)
 class ProtocolErrorException(message: String = "Request is malformed") : ServerException(message)
 class InternalServerErrorException(message: String = "Something bad happened...") : ServerException(message)
+
+class ServerExceptionSerializer : JsonSerializer<ServerException>() {
+    override fun serialize(value: ServerException?, gen: JsonGenerator?, serializers: SerializerProvider?) {
+        if (value == null || gen == null) return
+
+        gen.writeStartObject()
+        gen.writeStringField("error-type", value.javaClass.simpleName)
+        gen.writeStringField("error", value.error)
+        gen.writeEndObject()
+    }
+}
+
+class ServerExceptionDeserializer : JsonDeserializer<ServerException>() {
+    @Suppress("UNCHECKED_CAST")
+    override fun deserialize(parser: JsonParser?, ctxt: DeserializationContext?): ServerException {
+        if (parser == null) throw IllegalArgumentException()
+        val node: JsonNode = parser.codec.readTree(parser)
+        val errorType = node.get("error-type").asText()!!
+        val error = node.get("error").asText()!!
+        val klass = ServerException::class.sealedSubclasses.first {
+            it.simpleName == errorType
+        }
+        val constructor = klass.primaryConstructor!!
+        if (constructor.parameters.isNotEmpty())
+            return (constructor as (String) -> ServerException)(error)
+        return (constructor as () -> ServerException)()
+    }
+}
