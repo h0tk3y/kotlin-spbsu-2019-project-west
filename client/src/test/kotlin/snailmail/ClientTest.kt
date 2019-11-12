@@ -1,5 +1,6 @@
 package snailmail
 
+import org.junit.Ignore
 import snailmail.client.Client
 import snailmail.client.NotAuthenticatedException
 import snailmail.client.UserNotFoundException
@@ -10,6 +11,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
+@Ignore
 internal class ClientTest {
     private fun generateTwoUsers(block: (userA: Client, userB: Client) -> Unit) {
         val server = Server()

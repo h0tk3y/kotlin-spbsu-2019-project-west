@@ -3,11 +3,9 @@ package snailmail
 
 import snailmail.core.*
 import snailmail.server.Server
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNull
+import kotlin.test.*
 
+@Ignore
 internal class ServerTest {
     private fun generateServerWithTwoUsers(block: (Server) -> Unit) {
         val server = Server().apply {
