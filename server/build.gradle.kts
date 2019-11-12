@@ -1,6 +1,9 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+
 plugins {
     application
     kotlin("jvm") version "1.3.50"
+    jacoco
 }
 
 val ktor_version = "1.2.4"
@@ -22,6 +25,23 @@ dependencies {
 
     implementation(project(":core"))
     testImplementation(project(":client"))
+}
+
+
+jacoco {
+    toolVersion = "0.8.4"
+}
+
+tasks.jacocoTestReport {
+    reports {
+        xml.isEnabled = true
+        csv.isEnabled = true
+        html.isEnabled = true
+    }
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
 }
 
 application {
