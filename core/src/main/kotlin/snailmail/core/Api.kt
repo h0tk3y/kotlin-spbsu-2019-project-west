@@ -15,6 +15,7 @@ interface Api {
     /**
      * Creates a user registration entry
      * @return AuthToken on success
+     * @throws ProtocolErrorException if username or password is empty
      * @throws UnavailableUsernameException if username is already taken by someone else
      */
     fun register(credentials: UserCredentials): AuthToken
@@ -22,6 +23,7 @@ interface Api {
     /**
      * Authenticates an already registered user
      * @return AuthToken
+     * @throws ProtocolErrorException if username or password is empty
      * @throws WrongCredentialsException if there is no user with such credentials (or the password is wrong)
      */
     fun authenticate(credentials: UserCredentials): AuthToken
@@ -31,7 +33,7 @@ interface Api {
      * Username must be the same
      * @return new AuthToken
      * @throws InvalidTokenException if token is wrong, expired, etc.
-     * @throws ProtocolErrorException if usernames does not match
+     * @throws ProtocolErrorException if usernames do not match
      */
     fun changeCredentials(authToken: AuthToken, credentials: UserCredentials): AuthToken
 

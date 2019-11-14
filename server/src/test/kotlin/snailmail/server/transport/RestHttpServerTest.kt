@@ -24,16 +24,12 @@ internal class RestHttpServerTest {
     }
 
     @Test
-    fun `registration must reject empty password`() = runServer { _ ->
+    fun `registration must reject empty username & password`() = runServer { _ ->
         registerRequest("goodUsername", "") {
             assertEquals(HttpStatusCode.OK, response.status())
             val result = mapper.readValue<ProtocolErrorException>(response.content!!)
             assertNotEquals("", result.error)
         }
-    }
-
-    @Test
-    fun `registration must reject empty username`() = runServer { _ ->
         registerRequest("", "good password") {
             assertEquals(HttpStatusCode.OK, response.status())
             val result = mapper.readValue<ProtocolErrorException>(response.content!!)
@@ -60,6 +56,36 @@ internal class RestHttpServerTest {
             assertEquals(HttpStatusCode.OK, response.status())
             val result = mapper.readValue<AuthenticateResponse>(response.content!!)
             assert(result.result.isNotEmpty())
+        }
+    }
+
+    @Test
+    fun `authentication - wrong credentials`() = runServer { server ->
+        server.register(UserCredentials("user", "12345"))
+        authenticateRequest("user", "12245") {
+            assertEquals(HttpStatusCode.OK, response.status())
+            val result = mapper.readValue<WrongCredentialsException>(response.content!!)
+            assert(result.error.isNotEmpty())
+        }
+        authenticateRequest("vser", "12345") {
+            assertEquals(HttpStatusCode.OK, response.status())
+            val result = mapper.readValue<WrongCredentialsException>(response.content!!)
+            assert(result.error.isNotEmpty())
+        }
+    }
+
+    @Test
+    fun `authentication - protocol error on empty credentials`() = runServer { server ->
+        server.register(UserCredentials("user", "12345"))
+        authenticateRequest("", "12345") {
+            assertEquals(HttpStatusCode.OK, response.status())
+            val result = mapper.readValue<ProtocolErrorException>(response.content!!)
+            assert(result.error.isNotEmpty())
+        }
+        authenticateRequest("user", "") {
+            assertEquals(HttpStatusCode.OK, response.status())
+            val result = mapper.readValue<ProtocolErrorException>(response.content!!)
+            assert(result.error.isNotEmpty())
         }
     }
 

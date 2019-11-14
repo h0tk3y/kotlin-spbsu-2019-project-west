@@ -1,7 +1,6 @@
 package snailmail.server
 
 
-import com.auth0.jwt.exceptions.JWTVerificationException
 import snailmail.core.*
 import java.util.*
 import kotlin.collections.HashMap
@@ -148,11 +147,15 @@ class Server(private val secretKey: String = "secret") : Api {
     private var chatByChatId = HashMap<UUID, Chat>()
 
     private fun getUserIdFromToken(token: AuthToken): UUID {
+        val id: UUID
         try {
-            return UUID.fromString(simpleJwt.verifier.verify(token).getClaim("id").toString())
-        } catch (e: JWTVerificationException) {
+            id = UUID.fromString(simpleJwt.verifier.verify(token).getClaim("id").asString())
+        } catch (e: Exception) {
             throw InvalidTokenException()
         }
+        if (!userById.containsKey(id))
+            throw InvalidTokenException()
+        return id
     }
 
     private fun generateToken(userId: UUID): AuthToken = simpleJwt.sign(userId)
