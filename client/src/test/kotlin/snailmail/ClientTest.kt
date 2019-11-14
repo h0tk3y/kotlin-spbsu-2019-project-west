@@ -1,17 +1,13 @@
 package snailmail
 
-import org.junit.Ignore
 import snailmail.client.Client
 import snailmail.client.NotAuthenticatedException
-import snailmail.client.UserNotFoundException
-import snailmail.core.TextMessage
-import snailmail.core.UserCredentials
+import snailmail.core.*
 import snailmail.server.Server
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-@Ignore
 internal class ClientTest {
     private fun generateTwoUsers(block: (userA: Client, userB: Client) -> Unit) {
         val server = Server()
@@ -31,7 +27,7 @@ internal class ClientTest {
 
         user.register(UserCredentials("user", "12345")) // shouldn't throw exceptions
     }
-    
+
     @Test
     fun `successful reg and auth`() {
         val server = Server()
@@ -40,7 +36,7 @@ internal class ClientTest {
         user.register(UserCredentials("user", "abacaba")) // shouldn't throw exceptions
         user.authenticate(UserCredentials("user", "abacaba")) // shouldn't throw exceptions
     }
-    
+
     @Test
     fun `try to auth from another client`() {
         val server = Server()
@@ -50,15 +46,15 @@ internal class ClientTest {
         user.register(UserCredentials("user", "abacaba")) // shouldn't throw exceptions
         userAnotherClient.authenticate(UserCredentials("user", "abacaba")) // shouldn't throw exceptions
     }
-    
-    /*
+
+
     @Test
     fun `trying to reg twice with the same username`() {
         val server = Server()
         val user = Client(server)
 
-        assert(user.register(UserCredentials("user", "12345")))
-        assert(!user.register(UserCredentials("user", "qwerty")))
+        user.register(UserCredentials("user", "12345"))
+        assertFailsWith<UnavailableUsernameException> { user.register(UserCredentials("user", "qwerty")) }
     }
 
     @Test
@@ -67,8 +63,8 @@ internal class ClientTest {
         val user = Client(server)
         val userDuplicate = Client(server)
 
-        assert(user.register(UserCredentials("user", "12345")))
-        assert(!userDuplicate.register(UserCredentials("user", "qwerty")))
+        user.register(UserCredentials("user", "12345")) // shouldn't throw
+        assertFailsWith<UnavailableUsernameException> { userDuplicate.register(UserCredentials("user", "qwerty")) }
     }
 
     @Test
@@ -76,7 +72,7 @@ internal class ClientTest {
         val server = Server()
         val user = Client(server)
 
-        assert(!user.authenticate(UserCredentials("user", "00000")))
+        assertFailsWith<WrongCredentialsException> { user.authenticate(UserCredentials("user", "00000")) }
     }
 
     @Test
@@ -84,8 +80,8 @@ internal class ClientTest {
         val server = Server()
         val user = Client(server)
 
-        assert(user.register(UserCredentials("user", "abacaba")))
-        assert(!user.authenticate(UserCredentials("user", "abacabz")))
+        user.register(UserCredentials("user", "abacaba")) // shouldn't throw
+        assertFailsWith<WrongCredentialsException> { user.authenticate(UserCredentials("user", "abacabz")) }
     }
 
     @Test
@@ -93,10 +89,9 @@ internal class ClientTest {
         val server = Server()
         val user = Client(server)
 
-        assert(user.register(UserCredentials("user", "abacaba")))
-        assert(!user.authenticate(UserCredentials("usir", "abacaba")))
+        user.register(UserCredentials("user", "abacaba")) // shouldn't throw
+        assertFailsWith<WrongCredentialsException> { user.authenticate(UserCredentials("usir", "abacaba")) }
     }
-    */
 
     @Test
     fun `finding yourself`() {
@@ -276,7 +271,7 @@ internal class ClientTest {
 
         user.register(UserCredentials("user", "abacaba"))
 
-        assertFailsWith<UserNotFoundException> { user.findUser("Alice") }
+        assertFailsWith<UserDoesNotExistException> { user.findUser("Alice") }
     }
 
     @Test
@@ -286,7 +281,7 @@ internal class ClientTest {
 
         user.register(UserCredentials("user", "abacaba"))
 
-        assertFailsWith<UserNotFoundException> { user.sendMessage("Alice", "<3") }
+        assertFailsWith<UserDoesNotExistException> { user.sendMessage("Alice", "<3") }
     }
 
     @Test
@@ -296,6 +291,6 @@ internal class ClientTest {
 
         user.register(UserCredentials("user", "abacaba"))
 
-        assertFailsWith<UserNotFoundException> { user.getPersonalChatHistory("Alice") }
+        assertFailsWith<UserDoesNotExistException> { user.getPersonalChatHistory("Alice") }
     }
 }
