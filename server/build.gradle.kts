@@ -1,5 +1,3 @@
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-
 plugins {
     application
     kotlin("jvm") version "1.3.50"
@@ -7,7 +5,7 @@ plugins {
 }
 
 val ktor_version = "1.2.4"
-val jackson_databind_version = "2.10.0"
+val jackson_databind_version = "2.9.9"
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))

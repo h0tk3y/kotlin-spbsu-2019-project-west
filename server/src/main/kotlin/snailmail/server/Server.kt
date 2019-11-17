@@ -149,7 +149,8 @@ class Server(private val secretKey: String = "secret") : Api {
     private fun getUserIdFromToken(token: AuthToken): UUID {
         val id: UUID
         try {
-            id = UUID.fromString(simpleJwt.verifier.verify(token).getClaim("id").asString())
+            val jwt = simpleJwt.verifier.verify(token)
+            id = UUID.fromString(jwt.getClaim("id").asString())
         } catch (e: Exception) {
             throw InvalidTokenException()
         }
@@ -197,17 +198,18 @@ class Server(private val secretKey: String = "secret") : Api {
     }
 
     override fun getPersonalChatWith(token: AuthToken, user: UUID): PersonalChat {
-        val userId = getUserIdFromToken(token)
+        val me = getUserIdFromToken(token)
         val res = chats.find {
             when (it) {
-                is PersonalChat -> it.hasMember(getUserIdFromToken(token))
-                        && it.hasMember(user)
+                is PersonalChat ->
+                    if (me == user) it.person2 == it.person1 && me == it.person1
+                    else it.hasMember(me) && it.hasMember(user)
                 else -> false
             }
         }
         if (res == null) {
             val chat = PersonalChat(
-                    UUID.randomUUID(), userId, user
+                    UUID.randomUUID(), me, user
             )
             chats.add(chat)
             messagesByChatId[chat.id] = mutableListOf()

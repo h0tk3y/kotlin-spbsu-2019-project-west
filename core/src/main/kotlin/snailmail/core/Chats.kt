@@ -1,12 +1,12 @@
 package snailmail.core
 
-import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import java.util.*
-import kotlin.reflect.KClass
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 sealed class Chat(val type: String, val id: UUID) {
     abstract fun hasMember(user: UUID): Boolean
-    private companion object {
+    /*private companion object {
         @JsonCreator
         @JvmStatic
         fun findBySimpleName(simpleName: String): Chat? {
@@ -14,7 +14,7 @@ sealed class Chat(val type: String, val id: UUID) {
                 it.simpleName == simpleName
             }.objectInstance
         }
-    }
+    }*/
 }
 
 class PersonalChat(

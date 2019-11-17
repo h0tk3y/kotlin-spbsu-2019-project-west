@@ -7,7 +7,9 @@ import io.ktor.application.install
 import io.ktor.auth.Authentication
 import io.ktor.auth.authenticate
 import io.ktor.auth.jwt.jwt
+import io.ktor.auth.parseAuthorizationHeader
 import io.ktor.auth.principal
+import io.ktor.features.CallLogging
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.StatusPages
 import io.ktor.http.HttpStatusCode
@@ -19,6 +21,7 @@ import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import org.slf4j.event.Level
 import snailmail.core.*
 import snailmail.server.SimpleJwt
 import snailmail.server.UserPrincipal
@@ -48,12 +51,16 @@ class RestHttpServer(private val api: Api, private val secretKey: String) {
             }
         }
 
+        install(CallLogging) {
+            level = Level.INFO
+        }
+
         install(Authentication) {
             jwt {
                 verifier(simpleJwt.verifier)
                 validate {
                     val userId = UUID.fromString(it.payload.getClaim("id").asString())
-                    UserPrincipal(it.toString(), userId)
+                    UserPrincipal(this.request.parseAuthorizationHeader()?.render()!!.removePrefix("Bearer "), userId)
                 }
             }
         }
