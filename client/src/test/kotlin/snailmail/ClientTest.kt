@@ -138,7 +138,7 @@ internal class ClientTest {
         generateTwoUsers { userA, userB ->
             userA.sendMessage("B", "hello")
             assertEquals(1, userB.getPersonalChatHistory("A").size)
-            assertEquals("hello", (userB.getPersonalChatHistory("B").first() as TextMessage).content)
+            assertEquals("hello", (userB.getPersonalChatHistory("A").first() as TextMessage).content)
         }
     }
 
