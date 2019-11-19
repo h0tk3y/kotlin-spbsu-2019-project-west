@@ -2,12 +2,12 @@
 
 package snailmail.core
 
-import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import java.util.*
-import kotlin.reflect.KClass
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 sealed class Media(val type: String) {
-    private companion object {
+    /*private companion object {
         @JsonCreator
         @JvmStatic
         fun findBySimpleName(simpleName: String): Media? {
@@ -15,7 +15,7 @@ sealed class Media(val type: String) {
                 it.simpleName == simpleName
             }.objectInstance
         }
-    }
+    }*/
 }
 
 class Photo(

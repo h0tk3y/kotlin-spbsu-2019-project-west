@@ -1,16 +1,16 @@
 package snailmail.core
 
-import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import java.util.*
-import kotlin.reflect.KClass
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 sealed class Message(
         val type: String,
         val id: UUID,
         val chat: UUID,
         val date: Date
 ) {
-    private companion object {
+    /*private companion object {
         @JsonCreator
         @JvmStatic
         fun findBySimpleName(simpleName: String): Message? {
@@ -18,7 +18,7 @@ sealed class Message(
                 it.simpleName == simpleName
             }.objectInstance
         }
-    }
+    }*/
 }
 
 class TextMessage(

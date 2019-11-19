@@ -2,7 +2,7 @@ plugins {
     kotlin("jvm") version "1.3.50"
 }
 
-val jackson_version = "2.10.0"
+val jackson_version = "2.9.9"
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))

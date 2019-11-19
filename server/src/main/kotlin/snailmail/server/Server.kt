@@ -143,7 +143,8 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
     private fun getUserIdFromToken(token: AuthToken): UUID {
         val id: UUID
         try {
-            id = UUID.fromString(simpleJwt.verifier.verify(token).getClaim("id").asString())
+            val jwt = simpleJwt.verifier.verify(token)
+            id = UUID.fromString(jwt.getClaim("id").asString())
         } catch (e: Exception) {
             throw InvalidTokenException()
         }

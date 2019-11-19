@@ -48,19 +48,26 @@ class ServerExceptionSerializer : JsonSerializer<ServerException>() {
     }
 }
 
+class NotAServerExceptionException : Exception("This is definitely not a server exception")
+
 class ServerExceptionDeserializer : JsonDeserializer<ServerException>() {
     @Suppress("UNCHECKED_CAST")
     override fun deserialize(parser: JsonParser?, ctxt: DeserializationContext?): ServerException {
         if (parser == null) throw IllegalArgumentException()
-        val node: JsonNode = parser.codec.readTree(parser)
-        val errorType = node.get("error-type").asText()!!
-        val error = node.get("error").asText()!!
-        val klass = ServerException::class.sealedSubclasses.first {
-            it.simpleName == errorType
+        try {
+            val codec = parser.codec
+            val node: JsonNode = codec.readTree(parser)
+            val errorType = node.get("error-type").asText()!!
+            val error = node.get("error").asText()!!
+            val klass = ServerException::class.sealedSubclasses.first {
+                it.simpleName == errorType
+            }
+            val constructor = klass.primaryConstructor!!
+            if (constructor.parameters.isNotEmpty())
+                return (constructor as (String) -> ServerException)(error)
+            return (constructor as () -> ServerException)()
+        } catch (e: Exception) {
+            throw NotAServerExceptionException()
         }
-        val constructor = klass.primaryConstructor!!
-        if (constructor.parameters.isNotEmpty())
-            return (constructor as (String) -> ServerException)(error)
-        return (constructor as () -> ServerException)()
     }
 }

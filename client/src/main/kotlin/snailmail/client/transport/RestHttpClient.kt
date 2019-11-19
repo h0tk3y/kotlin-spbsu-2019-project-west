@@ -1,14 +1,18 @@
 package snailmail.client.transport
 
-import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.client.HttpClient
 import io.ktor.client.features.json.JacksonSerializer
 import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import kotlinx.coroutines.runBlocking
+import snailmail.client.NotAuthenticatedException
 import snailmail.core.*
 import java.util.*
 
@@ -156,16 +160,17 @@ class RestHttpClient(private val host: String, private val port: Int) : Api {
     private val serverUrl = "http://$host:$port"
 
     private inline fun <reified T> readResponse(json: String): T {
-        println(json)
+        // println(json)
         try {
             throw mapper.readValue<ServerException>(json)
-        } catch (e: JsonMappingException) {
+        } catch (e: NotAServerExceptionException) {
             return mapper.readValue(json)
         }
     }
 
     override fun authenticate(credentials: UserCredentials): AuthToken = runBlocking {
         val json = client.post<String>("$serverUrl/users/authenticate") {
+            contentType(ContentType.Application.Json)
             body = AuthenticateRequest(credentials.username, credentials.password)
         }
         readResponse<AuthenticateResponse>(json).result
@@ -173,37 +178,57 @@ class RestHttpClient(private val host: String, private val port: Int) : Api {
 
     override fun register(credentials: UserCredentials): AuthToken = runBlocking {
         val json = client.post<String>("$serverUrl/users/register") {
+            contentType(ContentType.Application.Json)
             body = RegisterRequest(credentials.username, credentials.password)
         }
         readResponse<RegisterResponse>(json).result
     }
 
     override fun getChats(token: AuthToken): List<Chat> = runBlocking {
-        val json = client.get<String>("$serverUrl/chats")
+        val json = client.get<String>("$serverUrl/chats") { addAuthHeader(token) }
         readResponse<GetChatsResponse>(json).chats
     }
 
-    override fun getPersonalChatWith(token: AuthToken, user: UUID): PersonalChat {
-        TODO()
+    override fun getPersonalChatWith(token: AuthToken, user: UUID): PersonalChat = runBlocking {
+        val json = client.get<String>("$serverUrl/chats/personal/$user") { addAuthHeader(token) }
+        readResponse<GetPersonalChatWithResponse>(json).chat
     }
 
-    override fun createGroupChat(token: AuthToken, title: String, invitedMembers: List<UUID>): GroupChat {
-        TODO()
+    override fun createGroupChat(token: AuthToken, title: String, invitedMembers: List<UUID>): GroupChat = runBlocking {
+        val json = client.post<String>("$serverUrl/chats/group") {
+            addAuthHeader(token)
+            contentType(ContentType.Application.Json)
+            body = CreateGroupChatRequest(title, invitedMembers)
+        }
+        readResponse<CreateGroupChatResponse>(json).chat
     }
 
-    override fun getChatMessages(token: AuthToken, chat: UUID): List<Message> {
-        TODO()
+    override fun getChatMessages(token: AuthToken, chat: UUID): List<Message> = runBlocking {
+        val json = client.get<String>("$serverUrl/chats/$chat/messages") { addAuthHeader(token) }
+        readResponse<GetChatMessagesResponse>(json).messages
     }
 
-    override fun sendTextMessage(token: AuthToken, text: String, chat: UUID): TextMessage {
-        TODO()
+    override fun sendTextMessage(token: AuthToken, text: String, chat: UUID): TextMessage = runBlocking {
+        val json = client.post<String>("$serverUrl/chats/$chat/messages") {
+            addAuthHeader(token)
+            contentType(ContentType.Application.Json)
+            body = SendTextMessageRequest(text)
+        }
+        readResponse<SendTextMessageResponse>(json).message
     }
 
-    override fun getUserByUsername(token: AuthToken, username: String): User {
-        TODO()
+    override fun getUserByUsername(token: AuthToken, username: String): User = runBlocking {
+        val json = client.get<String>("$serverUrl/users/username/$username") { addAuthHeader(token) }
+        readResponse<GetUserByUsernameResponse>(json).user
     }
 
-    override fun getUserById(token: AuthToken, user: UUID): User {
-        TODO()
+    override fun getUserById(token: AuthToken, user: UUID): User = runBlocking {
+        val json = client.get<String>("$serverUrl/users/id/$user") { addAuthHeader(token) }
+        readResponse<GetUserByUsernameResponse>(json).user
+    }
+
+    private fun HttpRequestBuilder.addAuthHeader(authToken: AuthToken?) {
+        if (authToken == null) throw NotAuthenticatedException()
+        header("Authorization", "Bearer $authToken")
     }
 }
