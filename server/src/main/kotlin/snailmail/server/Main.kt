@@ -3,6 +3,8 @@ package snailmail.server
 import com.xenomachina.argparser.ArgParser
 import com.xenomachina.argparser.default
 import com.xenomachina.argparser.mainBody
+import org.jetbrains.exposed.sql.Database
+import snailmail.server.data.MySQL
 import snailmail.server.transport.RestHttpServer
 
 class ServerArgs(parser: ArgParser) {
@@ -11,7 +13,11 @@ class ServerArgs(parser: ArgParser) {
 }
 
 fun main(args: Array<String>) = mainBody {
+    val url = "jdbc:h2:mem:test"
+    Database.connect(url, driver = "org.h2.Driver")
+    val dataBase = MySQL()
     ArgParser(args).parseInto(::ServerArgs).run {
-        RestHttpServer(Server(secret), secret).run(port)
+        RestHttpServer(Server(secret, dataBase), secret).run(port)
     }
+
 }

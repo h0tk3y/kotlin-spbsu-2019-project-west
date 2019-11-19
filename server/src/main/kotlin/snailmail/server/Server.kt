@@ -2,10 +2,10 @@ package snailmail.server
 
 
 import snailmail.core.*
+import snailmail.server.data.MySQL
 import java.util.*
-import kotlin.collections.HashMap
 
-class Server(private val secretKey: String = "secret") : Api {
+class Server(private val secretKey: String = "secret", private val dataBase: MySQL) : Api {
     override fun changeCredentials(authToken: AuthToken, credentials: UserCredentials): AuthToken {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -139,12 +139,6 @@ class Server(private val secretKey: String = "secret") : Api {
     }
 
     private val simpleJwt = SimpleJwt(secretKey)
-    private var userCredentials = HashMap<String, String>()
-    private var chats = mutableListOf<Chat>()
-    private var userByUsername = HashMap<String, User>()
-    private var userById = HashMap<UUID, User>()
-    private var messagesByChatId = HashMap<UUID, MutableList<Message>>()
-    private var chatByChatId = HashMap<UUID, Chat>()
 
     private fun getUserIdFromToken(token: AuthToken): UUID {
         val id: UUID
@@ -153,7 +147,7 @@ class Server(private val secretKey: String = "secret") : Api {
         } catch (e: Exception) {
             throw InvalidTokenException()
         }
-        if (!userById.containsKey(id))
+        if (!dataBase.findUserById(id))
             throw InvalidTokenException()
         return id
     }
@@ -167,10 +161,10 @@ class Server(private val secretKey: String = "secret") : Api {
         if (username.isEmpty() || password.isEmpty())
             throw ProtocolErrorException()
 
-        if (!userCredentials.contains(username) || userCredentials[username] != password)
+        if (!dataBase.verifyUserCredentials(username, password))
             throw WrongCredentialsException()
 
-        val userId = userByUsername[username]?.id
+        val userId = dataBase.getUserByUsername(username)?.id
                 ?: throw InternalServerErrorException("Successful authentication, but user doesn't exist.")
         return generateToken(userId)
     }
@@ -180,38 +174,27 @@ class Server(private val secretKey: String = "secret") : Api {
         val password = credentials.password
         if (username.isEmpty() || password.isEmpty())
             throw ProtocolErrorException()
-        if (userCredentials.contains(username))
+        if (dataBase.findUsername(username))
             throw UnavailableUsernameException()
         val user = User(UUID.randomUUID(), username, username)
-        userCredentials[username] = password
-        userByUsername[username] = user
-        userById[user.id] = user
+        dataBase.addUserCredentials(username, password)
+        dataBase.addUser(user)
         return authenticate(credentials)
     }
 
     override fun getChats(token: AuthToken): List<Chat> {
         val userId = getUserIdFromToken(token)
-        return this.chats.filter {
-            it.hasMember(userId)
-        }
+        return dataBase.getChats(userId)
     }
 
     override fun getPersonalChatWith(token: AuthToken, user: UUID): PersonalChat {
         val userId = getUserIdFromToken(token)
-        val res = chats.find {
-            when (it) {
-                is PersonalChat -> it.hasMember(getUserIdFromToken(token))
-                        && it.hasMember(user)
-                else -> false
-            }
-        }
+        val res = dataBase.getPersonalChatWith(userId, user)
         if (res == null) {
             val chat = PersonalChat(
                     UUID.randomUUID(), userId, user
             )
-            chats.add(chat)
-            messagesByChatId[chat.id] = mutableListOf()
-            chatByChatId[chat.id] = chat
+            dataBase.addChat(chat)
             return chat
         }
         return res as PersonalChat
@@ -219,10 +202,10 @@ class Server(private val secretKey: String = "secret") : Api {
 
     override fun getChatMessages(token: AuthToken, chat: UUID): List<Message> {
         val userId = getUserIdFromToken(token)
-        val currentChat = chatByChatId[chat] ?: throw ChatDoesNotExistOrUnavailableException()
+        val currentChat = dataBase.getChatByChatId(chat) ?: throw ChatDoesNotExistOrUnavailableException()
         if (!currentChat.hasMember(userId))
             throw UserIsNotMemberException()
-        return messagesByChatId[chat]
+        return dataBase.getMessagesByChatId(chat)
                 ?: throw InternalServerErrorException("Сhat exists, but his history doesn't exist.")
     }
 
@@ -236,8 +219,11 @@ class Server(private val secretKey: String = "secret") : Api {
                 sender = userId,
                 content = text, date = date
         )
-        messagesByChatId[chat]?.add(msg)
-                ?: throw InternalServerErrorException("Сhat exists, but his history doesn't exist.")
+        if (!dataBase.findMessagesByChatId(chat)) {
+            throw InternalServerErrorException("Сhat exists, but his history doesn't exist.")
+        } else {
+            dataBase.addMessage(chat, msg)
+        }
         return msg
     }
 
@@ -247,19 +233,17 @@ class Server(private val secretKey: String = "secret") : Api {
                 UUID.randomUUID(), title, userId,
                 invitedMembers
         )
-        chats.add(chat)
-        chatByChatId[chat.id] = chat
-        messagesByChatId[chat.id] = mutableListOf()
+        dataBase.addChat(chat)
         return chat
     }
 
     override fun getUserByUsername(token: AuthToken, username: String): User {
         getUserIdFromToken(token)
-        return userByUsername[username] ?: throw UserDoesNotExistException()
+        return dataBase.getUserByUsername(username) ?: throw UserDoesNotExistException()
     }
 
     override fun getUserById(token: AuthToken, user: UUID): User {
         getUserIdFromToken(token)
-        return userById[user] ?: throw UserDoesNotExistException()
+        return dataBase.getUserById(user) ?: throw UserDoesNotExistException()
     }
 }
