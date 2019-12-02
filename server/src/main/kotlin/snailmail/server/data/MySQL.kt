@@ -1,6 +1,5 @@
 package snailmail.server.data
 
-import javafx.scene.Group
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import snailmail.core.*

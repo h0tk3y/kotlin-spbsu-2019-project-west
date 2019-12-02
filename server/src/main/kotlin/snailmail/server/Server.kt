@@ -2,10 +2,11 @@ package snailmail.server
 
 
 import snailmail.core.*
+import snailmail.server.data.DataBase
 import snailmail.server.data.MySQL
 import java.util.*
 
-class Server(private val secretKey: String = "secret", private val dataBase: MySQL) : Api {
+class Server(private val secretKey: String = "secret", private val dataBase: DataBase) : Api {
 
     //add checking if the change was successful or not
     override fun changeCredentials(authToken: AuthToken, credentials: UserCredentials): AuthToken {

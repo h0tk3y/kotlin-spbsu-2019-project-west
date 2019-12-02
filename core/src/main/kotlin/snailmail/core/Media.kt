@@ -6,26 +6,21 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import java.util.*
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
-sealed class Media(val type: String) {
-    /*private companion object {
-        @JsonCreator
-        @JvmStatic
-        fun findBySimpleName(simpleName: String): Media? {
-            return Media::class.sealedSubclasses.first {
-                it.simpleName == simpleName
-            }.objectInstance
-        }
-    }*/
+sealed class Media(val type: String, val id: UUID, val size: ULong) {
 }
 
+/**
+ * Automatically converted to JPEG on server side
+ */
+
 class Photo(
-        val photo: UUID,
-        val thumbnail: UUID,
-        val size: ULong
-) : Media("photo")
+        id: UUID,
+        size: ULong,
+        val thumbnail: UUID
+) : Media("photo", id, size)
 
 class File(
-        val file: UUID,
-        val size: ULong,
+        id: UUID,
+        size: ULong,
         val filename: String
-) : Media("file")
+) : Media("file", id, size)
