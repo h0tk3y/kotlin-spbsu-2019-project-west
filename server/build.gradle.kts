@@ -1,6 +1,9 @@
+import de.gesellix.gradle.docker.tasks.*
+
 plugins {
     application
     kotlin("jvm") version "1.3.50"
+    id("de.gesellix.docker") version "2019-06-28T09-51-58"
     jacoco
 }
 
@@ -23,6 +26,66 @@ dependencies {
 
     implementation(project(":core"))
     testImplementation(project(":client"))
+}
+
+docker {
+    dockerHost = "unix:///var/run/docker.sock"
+}
+
+val groupDocker = "docker"
+val dockerRegistry = "registry.promoatlas.ru"
+val productName = "snailmail-west"
+val dockerImageName = "kotlin-spbsu/$productName"
+val dockerImageAndTag = "$dockerImageName:$version"
+val remoteDockerImageAndTag = "$dockerImageName:$version"
+
+val rmDockerImage = tasks.register<DockerRmiTask>("rmDockerImage") {
+    group = groupDocker
+    imageId = dockerImageAndTag
+}
+
+val buildLocalDockerImage = tasks.register<DockerBuildTask>("buildLocalDockerImage") {
+    dependsOn("installDist")
+    group = groupDocker
+    //buildParams = {"nocache" to true}
+    imageName = dockerImageAndTag
+    setBuildContextDirectory (file("."))
+    doFirst {
+        println("Building docker image $imageName ...")
+    }
+}
+
+val tagDockerImage = tasks.register<DockerTagTask>("tagDockerImage") {
+    dependsOn(buildLocalDockerImage)
+    group = groupDocker
+    imageId = dockerImageAndTag
+    tag = remoteDockerImageAndTag
+    doFirst {
+        println("Tag docker image $imageId as $tag ...")
+    }
+}
+
+val pushDockerImageToRegistry = tasks.register<DockerPushTask>("pushDockerImageToRegistry") {
+    dependsOn(tagDockerImage)
+            group = groupDocker
+    repositoryName = remoteDockerImageAndTag
+    registry = dockerRegistry
+    doFirst {
+        println("Pushing image $repositoryName to registry $registry ...")
+    }
+}
+
+val removeLocalDockerImages = tasks.register<GenericDockerTask>("removeLocalDockerImages") {
+    group = groupDocker
+    doFirst {
+        println("Removing local images : $dockerImageAndTag, $remoteDockerImageAndTag and $dockerRegistry/$remoteDockerImageAndTag ...")
+    }
+    doLast {
+        val docker = dockerClient
+        docker.rmi(dockerImageAndTag)
+        docker.rmi(remoteDockerImageAndTag)
+        docker.rmi("$dockerRegistry/$remoteDockerImageAndTag")
+    }
 }
 
 
