@@ -82,6 +82,11 @@ class Client(private val api: Api) {
         return processAuthentication(api.register(userCredentials), userCredentials.username)
     }
 
+    fun changeUserCredentials(userCredentials: UserCredentials) {
+        val authToken = acquireToken()
+        return processAuthentication(api.changeCredentials(authToken, userCredentials), userCredentials.username)
+    }
+
     private fun processAuthentication(authToken: AuthToken, username: String) {
         token = authToken
         this.username = username

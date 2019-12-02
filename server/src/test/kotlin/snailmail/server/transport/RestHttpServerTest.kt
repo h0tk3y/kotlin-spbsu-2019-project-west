@@ -5,14 +5,22 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.*
+import org.jetbrains.exposed.sql.Database
 import snailmail.core.*
 import snailmail.server.Server
+import snailmail.server.data.MySQL
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
 internal class RestHttpServerTest {
     private val mapper = jacksonObjectMapper()
+
+    private fun connection(): MySQL {
+        val url = "jdbc:h2:mem:test;DATABASE_TO_UPPER=false"
+        Database.connect(url, driver = "org.h2.Driver")
+        return MySQL()
+    }
 
     @Test
     fun `sample good registration`() = runServer { _ ->
@@ -91,7 +99,7 @@ internal class RestHttpServerTest {
 
     private fun runServer(block: TestApplicationEngine.(Server) -> Unit) {
         val sampleSecret = "secret"
-        val server = Server(sampleSecret)
+        val server = Server(sampleSecret, dataBase = connection())
         withTestApplication(RestHttpServer(server, sampleSecret).restServer(), test = { block(server) })
     }
 

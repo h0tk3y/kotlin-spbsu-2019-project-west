@@ -21,6 +21,13 @@ dependencies {
     implementation("com.googlecode.lanterna:lanterna:3.0.1")
     implementation("com.xenomachina:kotlin-argparser:2.0.7")
 
+    implementation("com.h2database:h2:1.4.200")
+
+    implementation("org.jetbrains.exposed", "exposed-core", "0.18.1")
+    implementation("org.jetbrains.exposed", "exposed-dao", "0.18.1")
+    implementation("org.jetbrains.exposed", "exposed-jdbc", "0.18.1")
+    implementation("org.jetbrains.exposed", "exposed-jodatime", "0.18.1")
+
     implementation(project(":core"))
     testImplementation(project(":server"))
 }

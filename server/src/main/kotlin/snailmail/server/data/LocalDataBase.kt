@@ -83,4 +83,111 @@ class LocalDataBase : DataBase {
         return messagesByChatId.containsKey(chat)
     }
 
+    override fun changeBannedContactOfUser(userId: UUID, targetUserId: UUID, isBanned: Boolean) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun changeContactDisplayName(userId: UUID, targetUserId: UUID) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun changePassword(credentials: UserCredentials): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun deleteMessage(messageId: UUID) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun editTextMessage(messageId: UUID, text: String) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun findGroupChatById(chat: UUID): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun findMessageById(messageId: UUID): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getContactOfUser(userId: UUID, contactUserId: UUID): Contact? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getGroupChatIdByTag(tag: String): UUID? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getGroupChatPreferencesByChatId(chatId: UUID): GroupChatPreferences? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getMembersOfChat(chatId: UUID): List<UUID>? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getMessageById(messageId: UUID): Message? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getTextMessageById(messageId: UUID): TextMessage? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isMemberOfGroupChat(userId: UUID, chatId: UUID): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isOwnerOfGroupChat(userId: UUID, chatId: UUID): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun joinGroupChat(userId: UUID, chatId: UUID) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun removeUserFromBlackListOfGroupChat(userId: UUID, chatId: UUID) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun removeUserFromGroupChat(userId: UUID, chatId: UUID) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun setOwnerOfGroupChat(userId: UUID, chatId: UUID) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun setPreferredTiTleOfGroupChat(userId: UUID, chatId: UUID, title: String) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun setPrivateInviteTokenOfGroupChat(inviteToken: String, chatId: UUID) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun setPublicTagOfGroupChat(publicTag: String, chatId: UUID) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun setTitleOfGroupChat(title: String, chatId: UUID) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun updateProfileDisplayName(userId: UUID, displayName: String) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun updateProfileEmail(userId: UUID, email: String?) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun withdrawPrivateInviteTokenOfGroupChat(chatId: UUID) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun withdrawPublicTagOfGroupChat(chatId: UUID) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
 }

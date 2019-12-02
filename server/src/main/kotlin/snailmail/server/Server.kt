@@ -6,68 +6,197 @@ import snailmail.server.data.MySQL
 import java.util.*
 
 class Server(private val secretKey: String = "secret", private val dataBase: MySQL) : Api {
+
+    //add checking if the change was successful or not
     override fun changeCredentials(authToken: AuthToken, credentials: UserCredentials): AuthToken {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(authToken)
+        if ((dataBase.getUserById(userId)?.username ?: throw UserDoesNotExistException()) != credentials.username)
+            throw ProtocolErrorException()
+        dataBase.changePassword(credentials)
+        return generateToken(userId)
     }
 
+    //
     override fun getChatById(token: AuthToken, chat: UUID): Chat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        val groupChat = dataBase.getChatByChatId(chat) ?: throw ChatDoesNotExistOrUnavailableException()
+        if (!groupChat.hasMember(userId))
+            throw UserIsNotMemberException()
+        return dataBase.getChatByChatId(chat) ?: throw ChatDoesNotExistOrUnavailableException()
+    }
+
+    private fun joinGroupChatById(userId: UUID, chatId: UUID): GroupChat {
+        val groupChat = dataBase.getChatByChatId(chatId) ?: throw ChatDoesNotExistOrUnavailableException()
+        if (groupChat !is GroupChat)
+            throw ChatDoesNotExistOrUnavailableException()
+        if (groupChat.blacklist.contains(userId))
+            throw ChatDoesNotExistOrUnavailableException()
+        if (groupChat.members.contains(userId))
+            throw UserIsAlreadyMemberException()
+        dataBase.joinGroupChat(userId, groupChat.id)
+        return groupChat
     }
 
     override fun joinGroupChatUsingPublicTag(token: AuthToken, tag: String): GroupChat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        val groupChatId = dataBase.getGroupChatIdByTag(tag) ?: throw PublicTagIsUnavailableException()
+        return joinGroupChatById(userId, groupChatId)
     }
 
     override fun joinGroupChatUsingInviteToken(token: AuthToken, inviteToken: String): GroupChat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        val chatId = getChatIdFromToken(inviteToken)
+        return joinGroupChatById(userId, chatId)
     }
 
+    //add sending of service message
     override fun inviteUserToGroupChat(token: AuthToken, chat: UUID, user: UUID): GroupChat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findUserById(user))
+            throw UserDoesNotExistException()
+        val groupChat = dataBase.getChatByChatId(chat) ?: throw ChatDoesNotExistOrUnavailableException()
+        if (groupChat !is GroupChat)
+            throw ChatDoesNotExistOrUnavailableException()
+        if (groupChat.members.contains(user))
+            throw UserIsAlreadyMemberException()
+        if (!groupChat.members.contains(userId))
+            throw UserIsNotMemberException()
+        if (checkBannedFor(token, user))
+            throw UserIsBannedException()
+        dataBase.joinGroupChat(user, chat)
+        if (groupChat.blacklist.contains(user))
+            dataBase.removeUserFromBlackListOfGroupChat(user, chat)
+        return dataBase.getChatByChatId(chat) as GroupChat
     }
 
     override fun kickUserFromGroupChat(token: AuthToken, chat: UUID, user: UUID): GroupChat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (userId == user)
+            throw ProtocolErrorException("Impossible to kick yoursels, use leaveGroupChat() instead")
+        if (!dataBase.findUserById(user))
+            throw UserDoesNotExistException()
+        if (!dataBase.findGroupChatById(chat))
+            throw ChatDoesNotExistOrUnavailableException()
+        if (!dataBase.isOwnerOfGroupChat(userId, chat))
+            throw UserIsNotOwnerException()
+        if (dataBase.isOwnerOfGroupChat(user, chat))
+            throw OperationFailedException("Impossible to kick owner out of group chat")
+        dataBase.removeUserFromGroupChat(user, chat)
+        return dataBase.getChatByChatId(chat) as GroupChat
     }
 
     override fun removeUserFromBlacklistOfGroupChat(token: AuthToken, chat: UUID, user: UUID): GroupChat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findUserById(user))
+            throw UserDoesNotExistException()
+        if (!dataBase.findGroupChatById(chat))
+            throw ChatDoesNotExistOrUnavailableException()
+        if (!dataBase.isOwnerOfGroupChat(userId, chat))
+            throw UserIsNotOwnerException()
+        dataBase.removeUserFromBlackListOfGroupChat(user, chat)
+        return dataBase.getChatByChatId(chat) as GroupChat
     }
 
+    //add service message
     override fun leaveGroupChat(token: AuthToken, chat: UUID): GroupChat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        val groupChat = dataBase.getChatByChatId(chat) ?: throw ChatDoesNotExistOrUnavailableException()
+        if (groupChat !is GroupChat)
+            throw ChatDoesNotExistOrUnavailableException()
+        if (!dataBase.isMemberOfGroupChat(userId, groupChat.id))
+            throw UserIsNotMemberException()
+        if (dataBase.isOwnerOfGroupChat(userId, groupChat.id)) {
+            dataBase.removeUserFromGroupChat(userId, groupChat.id)
+            val members = dataBase.getMembersOfChat(chat)
+            if (members == null || members.isEmpty()) {
+                dataBase.deleteChat(groupChat.id)
+                return groupChat
+            }
+            val new_owner = members[0]
+            dataBase.setOwnerOfGroupChat(new_owner, groupChat.id)
+            return GroupChat(groupChat.id, groupChat.title, new_owner, members,
+                groupChat.avatar, groupChat.blacklist, groupChat.publicTag, groupChat.privateInviteToken)
+        } else {
+            dataBase.removeUserFromGroupChat(userId, groupChat.id)
+        }
+        return groupChat
     }
 
+    //add service message
     override fun changeTitleOfGroupChat(token: AuthToken, chat: UUID, title: String): GroupChat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findGroupChatById(chat))
+            throw ChatDoesNotExistOrUnavailableException()
+        if (!dataBase.isOwnerOfGroupChat(userId, chat))
+            throw UserIsNotOwnerException()
+        dataBase.setTitleOfGroupChat(title, chat)
+        return dataBase.getChatByChatId(chat) as GroupChat
     }
 
+    //add service message
     override fun updateAvatarOfGroupChat(token: AuthToken, chat: UUID, photo: Photo): GroupChat {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun updatePublicTagOfGroupChat(token: AuthToken, chat: UUID, publicTag: String): GroupChat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findGroupChatById(chat))
+            throw ChatDoesNotExistOrUnavailableException()
+        if (!dataBase.isOwnerOfGroupChat(userId, chat))
+            throw UserIsNotOwnerException()
+        dataBase.setPublicTagOfGroupChat(publicTag, chat)
+        return dataBase.getChatByChatId(chat) as GroupChat
     }
 
     override fun withdrawPublicTagOfGroupChat(token: AuthToken, chat: UUID): GroupChat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findGroupChatById(chat))
+            throw ChatDoesNotExistOrUnavailableException()
+        if (!dataBase.isOwnerOfGroupChat(userId, chat))
+            throw UserIsNotOwnerException()
+        dataBase.withdrawPublicTagOfGroupChat(chat)
+        return dataBase.getChatByChatId(chat) as GroupChat
     }
 
     override fun makeNewPrivateInviteToken(token: AuthToken, chat: UUID): GroupChat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findGroupChatById(chat))
+            throw ChatDoesNotExistOrUnavailableException()
+        if (!dataBase.isOwnerOfGroupChat(userId, chat))
+            throw UserIsNotOwnerException()
+        val newInviteToken = generateInviteToken(chat)
+        dataBase.setPrivateInviteTokenOfGroupChat(newInviteToken, chat)
+        return dataBase.getChatByChatId(chat) as GroupChat
     }
 
     override fun withdrawPrivateInviteToken(token: AuthToken, chat: UUID): GroupChat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findGroupChatById(chat))
+            throw ChatDoesNotExistOrUnavailableException()
+        if (!dataBase.isOwnerOfGroupChat(userId, chat))
+            throw UserIsNotOwnerException()
+        dataBase.withdrawPrivateInviteTokenOfGroupChat(chat)
+        return dataBase.getChatByChatId(chat) as GroupChat
     }
 
+    //add GroupChatPreferences table to DB
     override fun setPreferredTitleOfGroupChat(token: AuthToken, chat: UUID, title: String): GroupChatPreferences {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findGroupChatById(chat))
+            throw ChatDoesNotExistOrUnavailableException()
+        if (!dataBase.isMemberOfGroupChat(userId, chat))
+            throw UserIsNotMemberException()
+        dataBase.setPreferredTiTleOfGroupChat(userId, chat, title)
+        return dataBase.getGroupChatPreferencesByChatId(chat) ?: throw GroupChatPreferencesDoesNotExist()
     }
 
     override fun getGroupChatPreferences(token: AuthToken, chat: UUID): GroupChatPreferences {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findGroupChatById(chat))
+            throw ChatDoesNotExistOrUnavailableException()
+        if (!dataBase.isOwnerOfGroupChat(userId, chat))
+            throw UserIsNotMemberException()
+        return dataBase.getGroupChatPreferencesByChatId(chat) ?: throw GroupChatPreferencesDoesNotExist()
     }
 
     override fun prepareUpload(token: AuthToken, mediaType: String): UUID {
@@ -78,12 +207,22 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun deleteMessage(token: AuthToken, message: UUID): DeletedMessage {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun deleteMessage(token: AuthToken, messageId: UUID): DeletedMessage {
+        val userId = getUserIdFromToken(token)
+        val message = dataBase.getMessageById(messageId) ?: throw MessageDoesNotExistException()
+        if (message.sender != userId)
+            throw UserIsNotSenderException()
+        dataBase.deleteMessage(message.id)
+        return message as DeletedMessage
     }
 
-    override fun editTextMessage(token: AuthToken, message: UUID, newText: String): TextMessage {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun editTextMessage(token: AuthToken, messageId: UUID, newText: String): TextMessage {
+        val userId = getUserIdFromToken(token)
+        val message = dataBase.getMessageById(messageId) ?: throw MessageDoesNotExistException()
+        if (message.sender != userId)
+            throw UserIsNotSenderException()
+        dataBase.editTextMessage(messageId, newText)
+        return dataBase.getTextMessageById(messageId) ?: throw MessageDoesNotExistException()
     }
 
     override fun sendMediaMessage(token: AuthToken, media: UUID, caption: String): MediaMessage {
@@ -95,31 +234,59 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
     }
 
     override fun getContact(token: AuthToken, user: UUID): Contact {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findUserById(userId))
+            throw UserDoesNotExistException()
+        return dataBase.getContactOfUser(userId, user) ?: throw ContactDoesNotExist()
     }
 
     override fun updateContactDisplayName(token: AuthToken, user: UUID, displayName: String): Contact {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findUserById(userId))
+            throw UserDoesNotExistException()
+        val contact = dataBase.getContactOfUser(userId, user) ?: throw ContactDoesNotExist()
+        dataBase.changeContactDisplayName(userId, user)
+        return contact
     }
 
     override fun banContact(token: AuthToken, user: UUID): Contact {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findUserById(userId))
+            throw UserDoesNotExistException()
+        val contact = dataBase.getContactOfUser(userId, user) ?: throw ContactDoesNotExist()
+        dataBase.changeBannedContactOfUser(userId, user, true)
+        return contact
     }
 
     override fun unbanContact(token: AuthToken, user: UUID): Contact {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findUserById(userId))
+            throw UserDoesNotExistException()
+        val contact = dataBase.getContactOfUser(userId, user) ?: throw ContactDoesNotExist()
+        dataBase.changeBannedContactOfUser(userId, user, false)
+        return contact
     }
 
     override fun checkBannedFor(token: AuthToken, user: UUID): Boolean {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        if (!dataBase.findUserById(userId))
+            throw UserDoesNotExistException()
+        val contact = dataBase.getContactOfUser(userId, user) ?: throw ContactDoesNotExist()
+        return contact.banned
     }
 
     override fun updateProfileDisplayName(token: AuthToken, displayName: String): User {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        val user = dataBase.getUserById(userId) ?: throw UserDoesNotExistException()
+        dataBase.updateProfileDisplayName(userId, displayName)
+        return user
     }
 
     override fun updateProfileEmail(token: AuthToken, email: String?): User {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val userId = getUserIdFromToken(token)
+        val user = dataBase.getUserById(userId) ?: throw UserDoesNotExistException()
+        dataBase.updateProfileEmail(userId, email)
+        return user
     }
 
     override fun updateProfileAvatar(token: AuthToken, avatar: Photo?): User {
@@ -153,7 +320,12 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
         return id
     }
 
+    private fun getChatIdFromToken(token: String): UUID {
+        return getUserIdFromToken(token)
+    }
+
     private fun generateToken(userId: UUID): AuthToken = simpleJwt.sign(userId)
+    private fun generateInviteToken(groupChatId: UUID): String = simpleJwt.sign(groupChatId).toString()
 
     override fun authenticate(credentials: UserCredentials): AuthToken {
         val username = credentials.username

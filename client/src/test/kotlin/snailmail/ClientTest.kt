@@ -1,16 +1,25 @@
 package snailmail
 
+import org.jetbrains.exposed.sql.Database
+import org.junit.Before
 import snailmail.client.Client
 import snailmail.client.NotAuthenticatedException
 import snailmail.core.*
 import snailmail.server.Server
+import snailmail.server.data.MySQL
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 internal class ClientTest {
+
+    @Before
+    fun truncateTables() {
+        MySQL.deleteDB()
+    }
+
     private fun generateTwoUsers(block: (userA: Client, userB: Client) -> Unit) {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val userA = Client(server)
         val userB = Client(server)
 
@@ -22,7 +31,7 @@ internal class ClientTest {
 
     @Test
     fun `successful reg`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
 
         user.register(UserCredentials("user", "12345")) // shouldn't throw exceptions
@@ -30,7 +39,7 @@ internal class ClientTest {
 
     @Test
     fun `successful reg and auth`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
 
         user.register(UserCredentials("user", "abacaba")) // shouldn't throw exceptions
@@ -39,7 +48,7 @@ internal class ClientTest {
 
     @Test
     fun `try to auth from another client`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
         val userAnotherClient = Client(server)
 
@@ -50,7 +59,7 @@ internal class ClientTest {
 
     @Test
     fun `trying to reg twice with the same username`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
 
         user.register(UserCredentials("user", "12345"))
@@ -59,7 +68,7 @@ internal class ClientTest {
 
     @Test
     fun `trying to reg with taken username`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
         val userDuplicate = Client(server)
 
@@ -69,7 +78,7 @@ internal class ClientTest {
 
     @Test
     fun `unregistered user tries to auth`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
 
         assertFailsWith<WrongCredentialsException> { user.authenticate(UserCredentials("user", "00000")) }
@@ -77,7 +86,7 @@ internal class ClientTest {
 
     @Test
     fun `typo in password`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
 
         user.register(UserCredentials("user", "abacaba")) // shouldn't throw
@@ -86,7 +95,7 @@ internal class ClientTest {
 
     @Test
     fun `typo in username`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
 
         user.register(UserCredentials("user", "abacaba")) // shouldn't throw
@@ -95,7 +104,7 @@ internal class ClientTest {
 
     @Test
     fun `finding yourself`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
 
         user.register(UserCredentials("uSER2000", "user000"))
@@ -144,7 +153,7 @@ internal class ClientTest {
 
     @Test
     fun `no available chats`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
 
         user.register(UserCredentials("user", "abacaba"))
@@ -153,7 +162,7 @@ internal class ClientTest {
 
     @Test
     fun `only one is available`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server).apply {
             register(UserCredentials("user", "abacaba"))
             sendMessage("user", "=)")
@@ -164,7 +173,7 @@ internal class ClientTest {
 
     @Test
     fun `3 available chats`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val userA = Client(server)
         val userB = Client(server)
         val userC = Client(server)
@@ -225,7 +234,7 @@ internal class ClientTest {
 
     @Test
     fun `trying to send a message by an unauthorized user results in an exception`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
         val userNoAuth = Client(server)
 
@@ -236,7 +245,7 @@ internal class ClientTest {
 
     @Test
     fun `trying to find available chats by an unauthorized user results in an exception`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val userNoAuth = Client(server)
 
         assertFailsWith<NotAuthenticatedException> { userNoAuth.findAvailableChats() }
@@ -244,7 +253,7 @@ internal class ClientTest {
 
     @Test
     fun `trying to get history of personal chat by an unauthorized user results in an exception`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
         val userNoAuth = Client(server)
 
@@ -255,7 +264,7 @@ internal class ClientTest {
 
     @Test
     fun `trying to find a user by an unauthorized user results in an exception`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
         val userNoAuth = Client(server)
 
@@ -266,7 +275,7 @@ internal class ClientTest {
 
     @Test
     fun `trying to find nonexistent user results in an exception`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
 
         user.register(UserCredentials("user", "abacaba"))
@@ -276,7 +285,7 @@ internal class ClientTest {
 
     @Test
     fun `trying to send message to nonexistent user results in an exception`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
 
         user.register(UserCredentials("user", "abacaba"))
@@ -286,7 +295,7 @@ internal class ClientTest {
 
     @Test
     fun `trying to get history of personal chat with nonexistent user results in an exception`() {
-        val server = Server()
+        val server = Server(dataBase = MySQL())
         val user = Client(server)
 
         user.register(UserCredentials("user", "abacaba"))

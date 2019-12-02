@@ -19,7 +19,7 @@ dependencies {
     implementation("com.xenomachina:kotlin-argparser:2.0.7")
     implementation("ch.qos.logback:logback-classic:1.2.3")
 
-    implementation("com.h2database:h2")
+    implementation("com.h2database:h2:1.4.200")
 
     implementation("org.jetbrains.exposed", "exposed-core", "0.18.1")
     implementation("org.jetbrains.exposed", "exposed-dao", "0.18.1")
