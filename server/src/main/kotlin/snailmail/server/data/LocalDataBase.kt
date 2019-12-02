@@ -1,7 +1,6 @@
 package snailmail.server.data
 
 import snailmail.core.*
-import snailmail.server.SimpleJwt
 import java.util.*
 
 class LocalDataBase : DataBase {
@@ -41,7 +40,7 @@ class LocalDataBase : DataBase {
                         && it.hasMember(otherUser)
                 else -> false
             }
-        } as PersonalChat
+        } as PersonalChat?
     }
 
     override fun getMessagesByChatId(id : UUID): List<Message>? {

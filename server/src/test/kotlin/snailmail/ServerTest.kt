@@ -1,31 +1,41 @@
 package snailmail
 
 
-import org.jetbrains.exposed.sql.Database
 import org.junit.Before
 import snailmail.core.*
 import snailmail.server.Server
+import snailmail.server.data.DataBase
+import snailmail.server.data.LocalDataBase
 import snailmail.server.data.MySQL
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-internal class ServerTest {
+internal class ServerMySQLTest : ServerGenericTest<MySQL>() {
+    override fun dbInstance(): MySQL = MySQL()
 
     @Before
     fun truncateTables() {
         MySQL.deleteDB()
     }
+}
+
+internal class ServerLocalDBTest : ServerGenericTest<LocalDataBase>() {
+    override fun dbInstance(): LocalDataBase = LocalDataBase()
+}
+
+internal abstract class ServerGenericTest<out T : DataBase> {
+    abstract fun dbInstance(): T
 
     private fun generateServerWithTwoUsers(block: (Server, AuthToken, AuthToken) -> Unit) {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
         val authA = server.register(UserCredentials("A", "aaaaa"))
         val authB = server.register(UserCredentials("B", "bbbbb"))
         block(server, authA, authB)
     }
 
     private fun generateServerWithFourUsers(block: (Server, AuthToken, AuthToken, AuthToken, AuthToken) -> Unit) {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
         val authA = server.register(UserCredentials("A", "aaaaa"))
         val authB = server.register(UserCredentials("B", "bbbbb"))
         val authC = server.register(UserCredentials("C", "ccccc"))
@@ -35,14 +45,14 @@ internal class ServerTest {
 
     @Test
     fun `successful reg`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
 
         assert(server.register(UserCredentials("user", "qwerty")).isNotEmpty())
     }
 
     @Test
     fun `trying to reg twice with the same username`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
 
         assert(server.register(UserCredentials("user", "qwerty")).isNotEmpty())
         assertFailsWith<UnavailableUsernameException> { server.register(UserCredentials("user", "password")) }
@@ -50,14 +60,14 @@ internal class ServerTest {
 
     @Test
     fun `unregistered user tries to auth`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
 
         assertFailsWith<WrongCredentialsException> { server.authenticate(UserCredentials("user", "password")) }
     }
 
     @Test
     fun `successful reg and auth`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
         val userCredentials = UserCredentials("user", "abacaba")
 
         assert(server.register(userCredentials).isNotEmpty())
@@ -74,7 +84,7 @@ internal class ServerTest {
 
     @Test
     fun `search for nonexistent user`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
         val token = server.register(UserCredentials("user", "abacaba"))
 
         assertFailsWith<UserDoesNotExistException> { server.getUserByUsername(token, "alice") }
@@ -100,7 +110,7 @@ internal class ServerTest {
 
     @Test
     fun `personal self-chat`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
         val token = server.register(UserCredentials("user", "00000"))
 
         val chat = server.getPersonalChatWith(token, server.getUserByUsername(token, "user").id)
@@ -110,7 +120,7 @@ internal class ServerTest {
 
     @Test
     fun `no chats`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
         val token = server.register(UserCredentials("user", "abacaba"))
         assert(server.getChats(token).isEmpty())
     }
@@ -136,7 +146,7 @@ internal class ServerTest {
 
     @Test
     fun `sending a message to yourself`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
         val token = server.register(UserCredentials("user", "abacaba"))
 
         val chat = server.getPersonalChatWith(token, server.getUserByUsername(token, "user").id)
@@ -170,7 +180,7 @@ internal class ServerTest {
 
     @Test
     fun `messages from personal self-chat`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
         val token = server.register(UserCredentials("user", "abacaba"))
         val chat = server.getPersonalChatWith(token, server.getUserByUsername(token, "user").id)
         server.sendTextMessage(token, "_____", chat.id)
@@ -193,7 +203,7 @@ internal class ServerTest {
 
     @Test
     fun `group self-chat`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
         val token = server.register(UserCredentials("user", "abacaba"))
 
         val members = listOf(server.getUserByUsername(token, "user").id)
@@ -221,7 +231,7 @@ internal class ServerTest {
 
     @Test
     fun `trying to get messages from personal chat by nonmember results in an exception`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
 
         val tokenA = server.register(UserCredentials("alice", "aaaaa"))
         server.register(UserCredentials("bob", "bbbbb"))
@@ -234,13 +244,13 @@ internal class ServerTest {
 
     @Test
     fun `getting chats with invalid token results in an exception`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
         assertFailsWith<InvalidTokenException> { server.getChats("user") }
     }
 
     @Test
     fun `searching by username with invalid token results in an exception`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
         server.register(UserCredentials("userRegistered", "abacaba"))
 
         assertFailsWith<InvalidTokenException> { server.getUserByUsername("user", "userRegistered") }
@@ -248,7 +258,7 @@ internal class ServerTest {
 
     @Test
     fun `getting personal chat with invalid token results in an exception`() {
-        val server = Server(dataBase = MySQL())
+        val server = Server(dataBase = dbInstance())
 
         val token = server.register(UserCredentials("userRegistered", "abacaba"))
         val userRegistered = server.getUserByUsername(token, "userRegistered")

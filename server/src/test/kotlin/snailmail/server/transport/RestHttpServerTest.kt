@@ -6,6 +6,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.*
 import org.jetbrains.exposed.sql.Database
+import org.junit.Before
 import snailmail.core.*
 import snailmail.server.Server
 import snailmail.server.data.MySQL
@@ -15,6 +16,11 @@ import kotlin.test.assertNotEquals
 
 internal class RestHttpServerTest {
     private val mapper = jacksonObjectMapper()
+
+    @Before
+    fun truncateTables() {
+        MySQL.deleteDB()
+    }
 
     private fun connection(): MySQL {
         val url = "jdbc:h2:mem:test;DATABASE_TO_UPPER=false"

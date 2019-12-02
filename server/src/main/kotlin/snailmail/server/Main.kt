@@ -8,12 +8,15 @@ import org.jetbrains.exposed.sql.Database
 import snailmail.server.data.DataBase
 import snailmail.server.data.LocalDataBase
 import snailmail.server.data.MySQL
+import snailmail.server.data.media.FileSystemMediaStorage
 import snailmail.server.transport.RestHttpServer
+import java.io.File
 
 class ServerArgs(parser: ArgParser) {
     val secret by parser.storing("Server secret key").default("secret")
     val port by parser.storing("Server port") { toInt() } .default(9999)
     val dbType by parser.storing("Database to use (In-Memory|MySQL)").default("In-Memory")
+    val mediaPath by parser.storing("Path for user media storage").default(".snailmail/media/")
 }
 
 fun main(args: Array<String>) = mainBody {
@@ -29,6 +32,9 @@ fun main(args: Array<String>) = mainBody {
             throw InvalidArgumentException("Invalid DB type! Expected MySQL or In-Memory")
         }
 
-        RestHttpServer(Server(secret, db), secret).run(port)
+        val mediaStorageFile = File(mediaPath)
+        if (!mediaStorageFile.exists()) mediaStorageFile.mkdirs()
+
+        RestHttpServer(Server(secret, db, FileSystemMediaStorage(mediaStorageFile)), secret).run(port)
     }
 }

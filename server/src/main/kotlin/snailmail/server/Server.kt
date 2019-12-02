@@ -3,10 +3,11 @@ package snailmail.server
 
 import snailmail.core.*
 import snailmail.server.data.DataBase
-import snailmail.server.data.MySQL
+import snailmail.server.data.media.DisabledMediaStorage
+import snailmail.server.data.media.MediaStorage
 import java.util.*
 
-class Server(private val secretKey: String = "secret", private val dataBase: DataBase) : Api {
+class Server(private val secretKey: String = "secret", private val dataBase: DataBase, private val mediaStorage: MediaStorage = DisabledMediaStorage()) : Api {
 
     //add checking if the change was successful or not
     override fun changeCredentials(authToken: AuthToken, credentials: UserCredentials): AuthToken {
@@ -208,22 +209,22 @@ class Server(private val secretKey: String = "secret", private val dataBase: Dat
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun deleteMessage(token: AuthToken, messageId: UUID): DeletedMessage {
+    override fun deleteMessage(token: AuthToken, message: UUID): DeletedMessage {
         val userId = getUserIdFromToken(token)
-        val message = dataBase.getMessageById(messageId) ?: throw MessageDoesNotExistException()
-        if (message.sender != userId)
+        val msg = dataBase.getMessageById(message) ?: throw MessageDoesNotExistException()
+        if (msg.sender != userId)
             throw UserIsNotSenderException()
-        dataBase.deleteMessage(message.id)
-        return message as DeletedMessage
+        dataBase.deleteMessage(msg.id)
+        return msg as DeletedMessage
     }
 
-    override fun editTextMessage(token: AuthToken, messageId: UUID, newText: String): TextMessage {
+    override fun editTextMessage(token: AuthToken, message: UUID, newText: String): TextMessage {
         val userId = getUserIdFromToken(token)
-        val message = dataBase.getMessageById(messageId) ?: throw MessageDoesNotExistException()
-        if (message.sender != userId)
+        val msg = dataBase.getMessageById(message) ?: throw MessageDoesNotExistException()
+        if (msg.sender != userId)
             throw UserIsNotSenderException()
-        dataBase.editTextMessage(messageId, newText)
-        return dataBase.getTextMessageById(messageId) ?: throw MessageDoesNotExistException()
+        dataBase.editTextMessage(message, newText)
+        return dataBase.getTextMessageById(message) ?: throw MessageDoesNotExistException()
     }
 
     override fun sendMediaMessage(token: AuthToken, media: UUID, caption: String): MediaMessage {
@@ -326,7 +327,7 @@ class Server(private val secretKey: String = "secret", private val dataBase: Dat
     }
 
     private fun generateToken(userId: UUID): AuthToken = simpleJwt.sign(userId)
-    private fun generateInviteToken(groupChatId: UUID): String = simpleJwt.sign(groupChatId).toString()
+    private fun generateInviteToken(groupChatId: UUID): String = simpleJwt.sign(groupChatId)
 
     override fun authenticate(credentials: UserCredentials): AuthToken {
         val username = credentials.username
@@ -371,7 +372,7 @@ class Server(private val secretKey: String = "secret", private val dataBase: Dat
             dataBase.addChat(chat)
             return chat
         }
-        return res as PersonalChat
+        return res
     }
 
     override fun getChatMessages(token: AuthToken, chat: UUID): List<Message> {
@@ -380,7 +381,7 @@ class Server(private val secretKey: String = "secret", private val dataBase: Dat
         if (!currentChat.hasMember(userId))
             throw UserIsNotMemberException()
         return dataBase.getMessagesByChatId(chat)
-                ?: throw InternalServerErrorException("Сhat exists, but his history doesn't exist.")
+                ?: throw InternalServerErrorException("Сhat exists, but its history doesn't exist.")
     }
 
     override fun sendTextMessage(token: AuthToken, text: String, chat: UUID): TextMessage {
@@ -394,7 +395,7 @@ class Server(private val secretKey: String = "secret", private val dataBase: Dat
                 content = text, date = date
         )
         if (!dataBase.findMessagesByChatId(chat)) {
-            throw InternalServerErrorException("Сhat exists, but his history doesn't exist.")
+            throw InternalServerErrorException("Сhat exists, but its history doesn't exist.")
         } else {
             dataBase.addMessage(chat, msg)
         }
