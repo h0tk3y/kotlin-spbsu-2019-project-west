@@ -11,7 +11,7 @@ interface DataBase {
 
     fun getUserById(id : UUID): User?
 
-    fun getChats(userId: UUID): List<Chat>
+    fun getChats(userId: UUID): List<Chat>?
 
     fun getChatByChatId(id : UUID): Chat?
 
@@ -45,7 +45,7 @@ interface DataBase {
 
     fun getGroupChatIdByTag(tag: String) : UUID?
 
-    fun getTextMessageById(messageId: UUID) : TextMessage?
+    fun getTextMessage(messageId: UUID) : TextMessage?
 
     fun joinGroupChat(userId: UUID, chatId: UUID)
 
@@ -71,7 +71,7 @@ interface DataBase {
 
     fun setPreferredTiTleOfGroupChat(userId: UUID, chatId: UUID, title: String)
 
-    fun getGroupChatPreferencesByChatId(chatId: UUID) : GroupChatPreferences?
+    fun getGroupChatPreferencesByChatId(userId: UUID, chatId: UUID) : GroupChatPreferences?
 
     fun getMessageById(messageId: UUID) : Message?
 
@@ -81,11 +81,15 @@ interface DataBase {
 
     fun getContactOfUser(userId: UUID, contactUserId: UUID) : Contact?
 
-    fun changeContactDisplayName(userId: UUID, targetUserId: UUID)
+    fun changeContactDisplayName(userId: UUID, targetUserId: UUID, newDisplayName: String)
 
     fun changeBannedContactOfUser(userId: UUID, targetUserId: UUID, isBanned: Boolean)
 
     fun updateProfileDisplayName(userId: UUID, displayName: String)
 
     fun updateProfileEmail(userId: UUID, email: String?)
+
+    fun addUserToBlacklistOfGroupChat(userId: UUID, chatId: UUID)
+
+    fun addToDeletedMessages(messageId: UUID)
 }
