@@ -9,7 +9,7 @@ import snailmail.client.lanterna.LanternaClient
 import snailmail.client.transport.RestHttpClient
 
 class ClientArgs(parser: ArgParser) {
-    val gui by parser.flagging("Use expiremental GUI")
+    val gui by parser.flagging("Use experimental GUI")
     val host by parser.storing("Server host").default("127.0.0.1")
     val port by parser.storing("Server port") { toInt() } .default(9999)
 }
