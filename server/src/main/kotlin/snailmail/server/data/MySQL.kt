@@ -1,11 +1,10 @@
 package snailmail.server.data
 
-import javafx.scene.Group
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 import snailmail.core.*
 import java.util.*
-import org.joda.time.DateTime
 
 class MySQL() : DataBase {
     private val url = "jdbc:h2:mem:test;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1"
