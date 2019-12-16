@@ -313,6 +313,8 @@ class MySQL() : DataBase {
             Users.insert {
                 it[id] = user.id
                 it[username] = user.username
+                it[displayName] = user.displayName
+                it[email] = user.email
             }
         }
         addChatsOfUser(user.id)
@@ -433,6 +435,7 @@ class MySQL() : DataBase {
                 it[type] = message.type
                 it[chat] = message.chat
                 it[date] = DateTime(message.date)
+                it[sender] = message.sender
             }
         }
     }
