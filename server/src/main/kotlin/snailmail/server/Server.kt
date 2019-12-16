@@ -2,10 +2,10 @@ package snailmail.server
 
 
 import snailmail.core.*
-import snailmail.server.data.MySQL
+import snailmail.server.data.DataBase
 import java.util.*
 
-class Server(private val secretKey: String = "secret", private val dataBase: MySQL) : Api {
+class Server(private val secretKey: String = "secret", private val dataBase: DataBase) : Api {
 
     //add checking if the change was successful or not
     override fun changeCredentials(authToken: AuthToken, credentials: UserCredentials): AuthToken {
@@ -82,6 +82,7 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
         if (dataBase.isOwnerOfGroupChat(user, chat))
             throw OperationFailedException("Impossible to kick owner out of group chat")
         dataBase.removeUserFromGroupChat(user, chat)
+        dataBase.addUserToBlacklistOfGroupChat(user, chat)
         return dataBase.getChatByChatId(chat) as GroupChat
     }
 
@@ -112,9 +113,9 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
                 dataBase.deleteChat(groupChat.id)
                 return groupChat
             }
-            val new_owner = members[0]
-            dataBase.setOwnerOfGroupChat(new_owner, groupChat.id)
-            return GroupChat(groupChat.id, groupChat.title, new_owner, members,
+            val newOwner = members[0]
+            dataBase.setOwnerOfGroupChat(newOwner, groupChat.id)
+            return GroupChat(groupChat.id, groupChat.title, newOwner, members,
                 groupChat.avatar, groupChat.blacklist, groupChat.publicTag, groupChat.privateInviteToken)
         } else {
             dataBase.removeUserFromGroupChat(userId, groupChat.id)
@@ -150,8 +151,11 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
 
     override fun withdrawPublicTagOfGroupChat(token: AuthToken, chat: UUID): GroupChat {
         val userId = getUserIdFromToken(token)
-        if (!dataBase.findGroupChatById(chat))
+        val groupChat = dataBase.getChatByChatId(chat) ?: throw ChatDoesNotExistOrUnavailableException()
+        if (groupChat !is GroupChat)
             throw ChatDoesNotExistOrUnavailableException()
+        if (groupChat.publicTag == null)
+            throw ProtocolErrorException("Public tag doesn't exist")
         if (!dataBase.isOwnerOfGroupChat(userId, chat))
             throw UserIsNotOwnerException()
         dataBase.withdrawPublicTagOfGroupChat(chat)
@@ -171,8 +175,11 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
 
     override fun withdrawPrivateInviteToken(token: AuthToken, chat: UUID): GroupChat {
         val userId = getUserIdFromToken(token)
-        if (!dataBase.findGroupChatById(chat))
+        val groupChat = dataBase.getChatByChatId(chat) ?: throw ChatDoesNotExistOrUnavailableException()
+        if (groupChat !is GroupChat)
             throw ChatDoesNotExistOrUnavailableException()
+        if (groupChat.privateInviteToken == null)
+            throw ProtocolErrorException("Invite token doesn't exist")
         if (!dataBase.isOwnerOfGroupChat(userId, chat))
             throw UserIsNotOwnerException()
         dataBase.withdrawPrivateInviteTokenOfGroupChat(chat)
@@ -187,7 +194,7 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
         if (!dataBase.isMemberOfGroupChat(userId, chat))
             throw UserIsNotMemberException()
         dataBase.setPreferredTiTleOfGroupChat(userId, chat, title)
-        return dataBase.getGroupChatPreferencesByChatId(chat) ?: throw GroupChatPreferencesDoesNotExist()
+        return dataBase.getGroupChatPreferencesByChatId(userId, chat) ?: throw GroupChatPreferencesDoesNotExist()
     }
 
     override fun getGroupChatPreferences(token: AuthToken, chat: UUID): GroupChatPreferences {
@@ -196,7 +203,7 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
             throw ChatDoesNotExistOrUnavailableException()
         if (!dataBase.isOwnerOfGroupChat(userId, chat))
             throw UserIsNotMemberException()
-        return dataBase.getGroupChatPreferencesByChatId(chat) ?: throw GroupChatPreferencesDoesNotExist()
+        return dataBase.getGroupChatPreferencesByChatId(userId, chat) ?: throw GroupChatPreferencesDoesNotExist()
     }
 
     override fun prepareUpload(token: AuthToken, mediaType: String): UUID {
@@ -212,6 +219,7 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
         val message = dataBase.getMessageById(messageId) ?: throw MessageDoesNotExistException()
         if (message.sender != userId)
             throw UserIsNotSenderException()
+        dataBase.addToDeletedMessages(message.id)
         dataBase.deleteMessage(message.id)
         return message as DeletedMessage
     }
@@ -222,7 +230,7 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
         if (message.sender != userId)
             throw UserIsNotSenderException()
         dataBase.editTextMessage(messageId, newText)
-        return dataBase.getTextMessageById(messageId) ?: throw MessageDoesNotExistException()
+        return dataBase.getTextMessage(messageId) ?: throw MessageDoesNotExistException()
     }
 
     override fun sendMediaMessage(token: AuthToken, media: UUID, caption: String): MediaMessage {
@@ -245,7 +253,7 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
         if (!dataBase.findUserById(userId))
             throw UserDoesNotExistException()
         val contact = dataBase.getContactOfUser(userId, user) ?: throw ContactDoesNotExist()
-        dataBase.changeContactDisplayName(userId, user)
+        dataBase.changeContactDisplayName(userId, user, displayName)
         return contact
     }
 
@@ -357,7 +365,9 @@ class Server(private val secretKey: String = "secret", private val dataBase: MyS
 
     override fun getChats(token: AuthToken): List<Chat> {
         val userId = getUserIdFromToken(token)
-        return dataBase.getChats(userId)
+        if (!dataBase.findUserById(userId))
+            throw UserDoesNotExistException()
+        return dataBase.getChats(userId) ?: listOf()
     }
 
     override fun getPersonalChatWith(token: AuthToken, user: UUID): PersonalChat {

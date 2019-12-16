@@ -36,7 +36,6 @@ internal class ServerTest {
     @Test
     fun `successful reg`() {
         val server = Server(dataBase = MySQL())
-
         assert(server.register(UserCredentials("user", "qwerty")).isNotEmpty())
     }
 
@@ -281,4 +280,5 @@ internal class ServerTest {
             assertFailsWith<InvalidTokenException> { server.createGroupChat("C", "", members) }
         }
     }
+    
 }

@@ -12,11 +12,25 @@ class MySQL() : DataBase {
     private object Users : Table() {
         val id = uuid("id").primaryKey()
         val username = varchar("username", 256) references UsersCredentials.username
+        val displayName = varchar("displayName", 256)
+        val email = text("email").nullable()
     }
 
     private object UsersCredentials : Table() {
         val username = varchar("username", 256).primaryKey()
         val password = varchar("password", 50)
+    }
+
+    private object Contacts : Table() {
+        val owner = uuid("owner") references ContactsOfUser.owner
+        val targetUser = uuid("targetUser")
+        val displayName = varchar("displayName", 256).nullable()
+        val banned = bool("banned")
+    }
+
+    private object ContactsOfUser: Table() {
+        val owner = uuid("owner").primaryKey()
+        val contacts = text("contacts")
     }
 
     private object Chats : Table() {
@@ -36,8 +50,8 @@ class MySQL() : DataBase {
         val owner = uuid("owner")
         val members = text("members")
         val blacklist = text("blacklist")
-        val publicTag = text("publicTag")
-        val privateInviteToken = text("privateInviteToken")
+        val publicTag = text("publicTag").nullable()
+        val privateInviteToken = text("privateInviteToken").nullable()
     }
 
     private object GroupChatsPreferences : Table() {
@@ -51,15 +65,23 @@ class MySQL() : DataBase {
         val type = varchar("type", 10)
         val chat = uuid("chat") references Chats.id
         val date = date("date")
+        val sender = uuid("sender")
     }
 
     private object TextMessages : Table() {
-        val id = uuid("id").primaryKey()
-        val chat = uuid("chat")
-        val date = date("date")
-        val sender = uuid("sender")
+        val id = uuid("id").primaryKey() references Messages.id
+        val chat = uuid("chat") references Messages.chat
+        val date = date("date") references Messages.date
         val content = text("content")
         val edited = bool("edited")
+        val sender = uuid("sender") references Messages.sender
+    }
+
+    private object DeletedMessages : Table() {
+        val id = uuid("id").primaryKey()
+        val chat = uuid("chat") references Chats.id
+        val date = date("date")
+        val sender = uuid("sender")
     }
 
     private object ChatsOfUsers : Table() {
@@ -132,14 +154,25 @@ class MySQL() : DataBase {
         return user[0]
     }
 
-    override fun getChats(userId: UUID): List<Chat> {
+    private fun getChatsIds(userId: UUID): List<UUID>? {
+        val chats = transaction {
+            ChatsOfUsers.select { ChatsOfUsers.id eq userId }.limit(1, offset = 0).map { row ->
+                deserializeUUIDs(row[ChatsOfUsers.chats])
+            }
+        }
+        if (chats.isEmpty())
+            return null
+        return chats[0]
+    }
+
+    override fun getChats(userId: UUID): List<Chat>? {
         val chats = transaction {
             ChatsOfUsers.select { ChatsOfUsers.id eq userId }.limit(1, offset = 0).map { row ->
                 deserializeUUIDs(row[ChatsOfUsers.chats]).mapNotNull { (getChatByChatId(it)) }
             }
         }
         if (chats.isEmpty())
-            return listOf()
+            return null
         return chats[0]
     }
 
@@ -168,6 +201,7 @@ class MySQL() : DataBase {
         return personalChat[0]
     }
 
+    //add new fields
     private fun getGroupChat(id: UUID): GroupChat? {
         Database.connect(url, driver = "org.h2.Driver")
         val groupChat = transaction {
@@ -230,12 +264,12 @@ class MySQL() : DataBase {
         return type[0]
     }
 
-    private fun getTextMessage(id: UUID): TextMessage? {
+    override fun getTextMessage(messageId: UUID): TextMessage? {
         Database.connect(url, driver = "org.h2.Driver")
         val message = transaction {
-            TextMessages.select { TextMessages.id eq id }.limit(1, offset = 0).map {
+            TextMessages.select { TextMessages.id eq messageId }.limit(1, offset = 0).map {
                 TextMessage(
-                    it[TextMessages.id], id, it[TextMessages.date].toDate(),
+                    it[TextMessages.id], messageId, it[TextMessages.date].toDate(),
                     it[TextMessages.sender], it[TextMessages.content],
                     it[TextMessages.edited]
                 )
@@ -298,7 +332,7 @@ class MySQL() : DataBase {
         Database.connect(url, driver = "org.h2.Driver")
         transaction {
             ChatsOfUsers.update({ ChatsOfUsers.id eq id }) { row ->
-                var chats = getChats(id).map { it.id }
+                var chats = getChats(id)?.map { it.id } ?: return@update
                 chats += chatId
                 val str = serializeUUIDs(chats)
                 row[ChatsOfUsers.chats] = str
@@ -462,11 +496,11 @@ class MySQL() : DataBase {
         return groupChatId[0]
     }
 
-    override fun getGroupChatPreferencesByChatId(chatId: UUID): GroupChatPreferences? {
+    override fun getGroupChatPreferencesByChatId(userId: UUID, chatId: UUID): GroupChatPreferences? {
         Database.connect(url, driver = "org.h2.Driver")
         val groupChatPreferences = transaction {
             GroupChatsPreferences.select { GroupChatsPreferences.targetChat eq chatId }.limit(1, 0).map {
-                snailmail.core.GroupChatPreferences(it[GroupChatsPreferences.owner], it[GroupChatsPreferences.targetChat],
+                GroupChatPreferences(it[GroupChatsPreferences.owner], it[GroupChatsPreferences.targetChat],
                     it[GroupChatsPreferences.title])
             }
         }
@@ -476,95 +510,243 @@ class MySQL() : DataBase {
     }
 
     override fun isMemberOfGroupChat(userId: UUID, chatId: UUID): Boolean {
-        TODO("not implemented")
+        return getMembersOfGroupChat(getGroupChat(chatId) ?: return false)?.contains(userId) ?: false
     }
 
     override fun isOwnerOfGroupChat(userId: UUID, chatId: UUID): Boolean {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return (getGroupChat(chatId)?.owner ?: return false) == userId
     }
 
     override fun joinGroupChat(userId: UUID, chatId: UUID) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        val groupChat = getGroupChat(chatId) ?: return
+        val members = getMembersOfGroupChat(groupChat)?.toMutableList() ?: return
+        members.add(userId)
+        val chats = getChats(userId)?.map {it.id}?.toMutableList() ?: return
+        chats.add(chatId)
+        transaction {
+            GroupChats.update({ GroupChats.id eq chatId }) {
+                it[GroupChats.members] = serializeUUIDs(members)
+            }
+            ChatsOfUsers.update({ChatsOfUsers.id eq userId}) {
+                it[ChatsOfUsers.chats] = serializeUUIDs(chats)
+            }
+        }
     }
 
     override fun setTitleOfGroupChat(title: String, chatId: UUID) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            GroupChats.update({ GroupChats.id eq chatId }) {
+                it[GroupChats.title] = title
+            }
+        }
     }
 
     override fun setOwnerOfGroupChat(userId: UUID, chatId: UUID) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            GroupChats.update({ GroupChats.id eq chatId }) {
+                it[GroupChats.owner] = userId
+            }
+        }
     }
 
     override fun setPublicTagOfGroupChat(publicTag: String, chatId: UUID) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            GroupChats.update({ GroupChats.id eq chatId }) {
+                it[GroupChats.publicTag] = publicTag
+            }
+        }
     }
 
     override fun setPrivateInviteTokenOfGroupChat(inviteToken: String, chatId: UUID) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            GroupChats.update({ GroupChats.id eq chatId }) {
+                it[GroupChats.privateInviteToken] = inviteToken
+            }
+        }
     }
 
     override fun setPreferredTiTleOfGroupChat(userId: UUID, chatId: UUID, title: String) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            GroupChatsPreferences.update({ (GroupChatsPreferences.targetChat eq chatId) and (GroupChatsPreferences.owner eq userId)}) {
+                it[GroupChatsPreferences.title] = title
+            }
+        }
+    }
+
+    private fun getBlacklistOfGroupChat(chatId: UUID): List<UUID>? {
+        Database.connect(url, driver = "org.h2.Driver")
+        return transaction {
+            GroupChats.select { GroupChats.id eq chatId }.singleOrNull()?.get(GroupChats.blacklist)?.let {
+                deserializeUUIDs(it)
+            }
+        }
+    }
+
+    override fun addUserToBlacklistOfGroupChat(userId: UUID, chatId: UUID) {
+        Database.connect(url, driver = "org.h2.Driver")
+        val blacklist = getGroupChat(chatId)?.blacklist?.toMutableList() ?: return
+        blacklist.add(userId)
+        transaction {
+            GroupChats.update({ GroupChats.id eq chatId }) {
+                it[GroupChats.blacklist] = serializeUUIDs(blacklist)
+            }
+        }
     }
 
     override fun removeUserFromGroupChat(userId: UUID, chatId: UUID) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        getGroupChat(chatId)?.let { getMembersOfGroupChat(it) }?.toMutableList()?.let { members ->
+            members.remove(userId)
+            transaction {
+                GroupChats.update({ GroupChats.id eq chatId }) {
+                    it[GroupChats.members] = serializeUUIDs(members)
+                }
+            }
+        }
+        getChatsIds(userId)?.toMutableList()?.let {chats ->
+            transaction {
+                ChatsOfUsers.update({ ChatsOfUsers.id eq userId }) {
+                    chats.remove(chatId)
+                    it[ChatsOfUsers.chats] = serializeUUIDs(chats)
+                }
+            }
+        }
     }
 
     override fun removeUserFromBlackListOfGroupChat(userId: UUID, chatId: UUID) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        getBlacklistOfGroupChat(chatId)?.toMutableList()?.let { blacklist ->
+            blacklist.remove(userId)
+            transaction {
+                GroupChats.update({ GroupChats.id eq chatId}) {
+                    it[GroupChats.blacklist] = serializeUUIDs(blacklist)
+                }
+            }
+        }
     }
 
     override fun withdrawPublicTagOfGroupChat(chatId: UUID) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            GroupChats.update ({ GroupChats.id eq chatId}) {
+                it[GroupChats.publicTag] = null
+            }
+        }
     }
 
     override fun withdrawPrivateInviteTokenOfGroupChat(chatId: UUID) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            GroupChats.update ({ GroupChats.id eq chatId}) {
+                it[GroupChats.privateInviteToken] = null
+            }
+        }
     }
 
     override fun getMembersOfChat(chatId: UUID): List<UUID>? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        return transaction {
+            GroupChats.select { GroupChats.id eq chatId }.singleOrNull()?.let { row ->
+                deserializeUUIDs(row[GroupChats.members])
+            }
+        }
     }
 
     override fun getMessageById(messageId: UUID): Message? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        val type = getMessageType(messageId)
+        if (type == "text")
+            return getTextMessage(messageId)
+        return null
+    }
+
+    override fun addToDeletedMessages(messageId: UUID) {
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            Messages.select { Messages.id eq messageId }.singleOrNull()?.let { row ->
+                DeletedMessages.insert {
+                    it[id] = row[Messages.id]
+                    it[chat] = row[Messages.chat]
+                    it[date] = row[Messages.date]
+                    it[sender] = row[Messages.sender]
+                }
+            }
+        }
     }
 
     override fun deleteMessage(messageId: UUID) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            Messages.deleteWhere { Messages.id eq messageId }
+        }
     }
 
     override fun editTextMessage(messageId: UUID, text: String) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun getTextMessageById(messageId: UUID): TextMessage? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            TextMessages.update({ TextMessages.id eq messageId }) {
+                it[content] = text
+                it[edited] = true
+            }
+        }
     }
 
     override fun findMessageById(messageId: UUID): Boolean {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        return transaction {
+            Messages.select { Messages.id eq messageId }.singleOrNull()
+        } != null
     }
 
     override fun getContactOfUser(userId: UUID, contactUserId: UUID): Contact? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        return transaction {
+            Contacts.select { (Contacts.owner eq userId) and (Contacts.targetUser eq contactUserId) }.singleOrNull()?.let {
+                Contact(it[Contacts.owner], it[Contacts.targetUser], it[Contacts.displayName], it[Contacts.banned])
+            }
+        }
     }
 
-    override fun changeContactDisplayName(userId: UUID, targetUserId: UUID) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun changeContactDisplayName(userId: UUID, targetUserId: UUID, newDisplayName: String) {
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            Contacts.update ({ (Contacts.owner eq userId) and (Contacts.targetUser eq targetUserId)}) {
+                it[displayName] = newDisplayName
+            }
+        }
     }
 
     override fun changeBannedContactOfUser(userId: UUID, targetUserId: UUID, isBanned: Boolean) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            Contacts.update ({ (Contacts.owner eq userId) and (Contacts.targetUser eq targetUserId)}) {
+                it[banned] = isBanned
+            }
+        }
     }
 
     override fun updateProfileDisplayName(userId: UUID, displayName: String) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            Users.update ({ Users.id eq userId }) {
+                it[Users.displayName] = displayName
+            }
+        }
     }
 
     override fun updateProfileEmail(userId: UUID, email: String?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Database.connect(url, driver = "org.h2.Driver")
+        transaction {
+            Users.update ({ Users.id eq userId }) {
+                it[Users.email] = email
+            }
+        }
     }
 
     companion object {
